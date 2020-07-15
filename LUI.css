@@ -50,9 +50,24 @@ html, body{
 /********** NAV BAR ***************/
 
 .lui-nav-bar{
-    background-color: darkslategrey;
+    background-image: linear-gradient(#ffc27d, #ffa154);
     min-height: 50px;
     height: 8vh;
+    display:flex;
+    flex-direction: row;
+    align-content: space-between;
+    align-items: center;
+}
+
+.lui-nav-burger{
+    font-size: 2em;
+    border: 1px solid gray;
+    border-radius: 0.2em 0.2em;
+    padding-left: 0.3em;
+    padding-right: 0.3em;
+    height: 1.3em;
+    user-select: none;
+    cursor: pointer;
 }
 
 
@@ -119,10 +134,15 @@ body .lui-emphasized{
     border: solid 1px rgb(71, 122, 146);
     border-top: rgb(88, 157, 189);
     border-left: rgb(88, 157, 189);
+
 }
 
 .lui-button.lui-apply{
-    background-color: #3689e6;
+    background-image: linear-gradient( #3689e6, #0d52bf);
     color: whitesmoke;
     
+}
+
+.lui-button.lui-apply:active{
+    background-image: linear-gradient( #0d52bf, #0d52bf);
 }
