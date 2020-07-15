@@ -1,0 +1,128 @@
+* {
+    font-family: Ubuntu;
+    box-sizing: border-box;
+}
+
+/***** GENERAL LAYOUT ITEMS **********/
+
+[class*="lui-col-"]{
+    float: left;
+    padding:15px;
+}
+
+.lui-col-1 {width: 8.33%;}
+.lui-col-2 {width: 16.66%;}
+.lui-col-3 {width: 25%;}
+.lui-col-4 {width: 33.33%;}
+.lui-col-5 {width: 41.66%;}
+.lui-col-6 {width: 50%;}
+.lui-col-7 {width: 58.33%;}
+.lui-col-8 {width: 66.66%;}
+.lui-col-9 {width: 75%;}
+.lui-col-10 {width: 83.33%;}
+.lui-col-11 {width: 91.66%;}
+.lui-col-12 {width: 100%;}
+
+.lui-row::after {
+    content: "";
+    clear: both;
+    display: table;
+  }
+
+@media only screen and (max-width: 768px) {
+    /* For mobile phones: */
+    [class*="lui-col-"] {
+        width: 100%;
+    }
+}
+
+/***** MAIN LAYOUT ITEMS **********/
+
+html, body{
+    height:100%;
+    margin: 0;
+}
+
+.LUI-app{
+    
+}
+
+/********** NAV BAR ***************/
+
+.lui-nav-bar{
+    background-color: darkslategrey;
+    min-height: 50px;
+    height: 8vh;
+}
+
+
+/***** FORM RELATED ITEMS *********/
+
+.lui-emphasized{
+    max-width: 800px;
+    position: relative;
+    margin:auto;
+}
+
+body .lui-emphasized{
+    margin-top: 30px;
+}
+
+.lui-form {
+    border: solid 1px gray;
+    border-radius: 0.5em 0.5em;
+    overflow: auto;
+}
+
+.lui-form .lui-header{
+    border: 1px gray solid;
+    border-radius: 0.5em;
+    padding-top: 0.50em;
+    padding-bottom: 0.50em;
+    padding:0.5em;
+    text-align: center;
+    position: absolute;
+    top: -2.5em;
+    left: 1em;
+    background-color: white;
+}
+
+.lui-form .lui-row:first-of-type {
+    margin-top: 2em;
+}
+
+.lui-form .lui-row:last-of-type {
+    margin-bottom: 2.5em;
+}
+
+.lui-form .lui-apply{
+    position: absolute;
+    right:6vw;
+    margin-top: -0.8em;
+}
+
+.lui-entry{
+    display: flex;
+    flex-flow: row wrap;
+    justify-content: center;
+}
+
+.lui-entry *{
+    margin-left: 0.5em;
+    margin-right: 0.5em;
+}
+
+.lui-button{
+    height: 2.3em;
+    font-size: medium;
+    border-radius: 0.2em;
+    border: solid 1px rgb(71, 122, 146);
+    border-top: rgb(88, 157, 189);
+    border-left: rgb(88, 157, 189);
+}
+
+.lui-button.lui-apply{
+    background-color: #3689e6;
+    color: whitesmoke;
+    
+}
