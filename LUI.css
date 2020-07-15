@@ -54,9 +54,16 @@ html, body{
     min-height: 50px;
     height: 8vh;
     display:flex;
-    flex-direction: row;
-    align-content: space-between;
+    justify-content: space-between;
     align-items: center;
+}
+
+.lui-nav-bar *:first-child{
+    margin-left: 0.5em;
+}
+
+.lui-nav-bar *:last-child{
+    margin-right: 0.5em;
 }
 
 .lui-nav-burger{
