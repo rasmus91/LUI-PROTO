@@ -40,6 +40,7 @@
 
 html, body{
     height:100%;
+    width: 100%;
     margin: 0;
 }
 
@@ -51,11 +52,8 @@ html, body{
 
 .lui-nav-bar{
     background-image: linear-gradient(#ffc27d, #ffa154);
-    min-height: 50px;
-    height: 8vh;
-    display:flex;
-    justify-content: space-between;
-    align-items: center;
+    height: 3em;
+    width:100%;
 }
 
 .lui-nav-bar *:first-child{
@@ -66,15 +64,60 @@ html, body{
     margin-right: 0.5em;
 }
 
+.lui-nav-bar-mobile-left{
+    display:none;
+}
+
+.lui-nav-bar-title{
+    display: inline-block;
+    width:30%;
+    vertical-align: middle;
+}
+
+.lui-nav-header{
+    vertical-align: middle;
+    margin-top: 0.8em;
+}
+
+.lui-nav-bar-navigation{
+    display: inline-block;
+    width: 70%;
+}
+
+.lui-nav-bar-menu{
+    display: inline-block;
+}
+
+@media only screen and (max-width:768px){
+    .lui-nav-bar-mobile-left{
+        display:inline-block;
+        width: 20%;
+    }
+
+    .lui-nav-bar-title{
+        width:60%;
+        text-align: center;
+    }
+
+    .lui-nav-bar-navigation{
+        width: 20%;
+    }
+}
+
+
+
 .lui-nav-burger{
+    position: absolute;
     font-size: 2em;
     border: 1px solid gray;
     border-radius: 0.2em 0.2em;
-    padding-left: 0.3em;
-    padding-right: 0.3em;
+    text-align: center;
     height: 1.3em;
+    width: 1.5em;
     user-select: none;
     cursor: pointer;
+    top:0.1em;
+    right:0em;
 }
 
 
@@ -84,7 +127,7 @@ html, body{
     z-index: 1;
     padding: 0 10px 0 30px;
     left: 0.5em;
-    top: 0.5em;
+    top: 0.3em;
     
     line-height: 44px;
     
