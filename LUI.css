@@ -56,9 +56,6 @@ html, body{
     width:100%;
 }
 
-.lui-nav-bar *:first-child{
-    margin-left: 0.5em;
-}
 
 .lui-nav-bar *:last-child{
     margin-right: 0.5em;
@@ -76,16 +73,38 @@ html, body{
 
 .lui-nav-header{
     vertical-align: middle;
-    margin-top: 0.8em;
+    margin-top: 0.7em;
+    margin-left: 1em;
+    margin-right: 1em;
 }
 
 .lui-nav-bar-navigation{
     display: inline-block;
-    width: 70%;
+    width: 65%;
 }
 
 .lui-nav-bar-menu{
     display: inline-block;
+}
+
+.lui-nav-bar-link-area{
+    width: 100%;
+    height: 100%;
+}
+
+.lui-nav-bar-menu a{
+    display:inline-block;
+    color: #333333;
+    height: 1.5em;
+    margin-left: 1em;
+}
+
+.lui-nav-bar-menu a:link{
+    text-decoration: none;
+}
+
+.lui-nav-bar-menu a:visited{
+    text-decoration: none;
 }
 
 @media only screen and (max-width:768px){
@@ -102,6 +121,52 @@ html, body{
     .lui-nav-bar-navigation{
         width: 20%;
     }
+
+    .lui-nav-bar-menu:before{
+        content: "≡";
+        color:#333333;
+        position: absolute;
+        font-size: 2em;
+        border: 1px solid gray;
+        border-radius: 0.2em 0.2em;
+        text-align: center;
+        height: 1.3em;
+        width: 1.5em;
+        user-select: none;
+        cursor: pointer;
+        top:-1.45em;
+        right:0.2em;
+    }
+
+    .lui-nav-bar-menu a{
+        display: none;
+        font-size: 1.2em;
+        margin-top: 0.5em;
+    }
+
+    .lui-nav-bar-menu.active:before{
+        background-color: #f37329;
+        position: absolute;
+    }
+
+    .lui-nav-bar-menu{
+        position: absolute;
+        background-color: #ffa154;
+        width: 0%;
+        right:-0.5em;
+        top:3em;
+        bottom:0em;
+        transition: width 0.4s;        
+    }
+
+    .lui-nav-bar-menu.active{
+        width: 50%;
+    }
+
+    .lui-nav-bar-menu.active a{
+        display: block;
+    }
+
 }
 
 
@@ -137,6 +202,7 @@ html, body{
     font-size: 12px;
 
     user-select: none;
+    color: #333333;
 }
 
 
