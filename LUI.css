@@ -94,9 +94,11 @@ html, body{
 
 .lui-nav-bar-menu a{
     display:inline-block;
-    color: #333333;
+    color: #4d4d4d;
     height: 1.5em;
     margin-left: 1em;
+    vertical-align: middle;
+    user-select: none;
 }
 
 .lui-nav-bar-menu a:link{
@@ -105,6 +107,20 @@ html, body{
 
 .lui-nav-bar-menu a:visited{
     text-decoration: none;
+}
+
+.lui-nav-bar-menu a:hover{
+    text-shadow: 1px 1px 6px #666666;
+}
+
+.lui-nav-bar-menu a.chosen{
+    font-size: 1.3em;
+    color: #333333;
+}
+
+.lui-nav-bar-menu a.nchosen{
+    font-size: 1.1em;
+    color: #666666;
 }
 
 @media only screen and (max-width:768px){
@@ -141,7 +157,8 @@ html, body{
     .lui-nav-bar-menu a{
         display: none;
         font-size: 1.2em;
-        margin-top: 0.5em;
+        height: 1.5em;
+        vertical-align: middle;
     }
 
     .lui-nav-bar-menu.active:before{

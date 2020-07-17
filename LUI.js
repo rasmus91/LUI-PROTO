@@ -12,3 +12,17 @@ document.getElementsByClassName('lui-nav-bar-menu')[0].addEventListener('click',
 document.getElementsByClassName('lui-nav-bar-link-area')[0].addEventListener('click', function(e){
     e.stopPropagation();
 });
+
+
+document.getElementsByClassName('lui-nav-bar-link-area')[0].addEventListener('click', function(e){
+    if(e.target.nodeName == 'A')
+        Array.from(this.getElementsByTagName('a')).forEach(element => {
+                if(element != e.target){
+                    element.classList.remove('chosen');
+                    element.classList.add('nchosen');
+                }else{
+                    element.classList.remove('nchosen');
+                    element.classList.add('chosen');
+                }
+        });
+});
