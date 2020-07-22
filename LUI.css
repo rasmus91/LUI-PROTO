@@ -44,8 +44,19 @@ html, body{
     margin: 0;
 }
 
-.LUI-app{
-    
+.lui-main{
+    position: relative;
+    counter-reset: emphasized-offset;
+}
+
+
+
+@media only screen  and (max-width:768px){
+
+    [class*="lui-sidebar-*"]{
+        visibility: hidden;
+    }
+
 }
 
 /********** NAV BAR ***************/
@@ -328,6 +339,9 @@ html, body{
     box-shadow: inset 1px 1px 0px #f37329;
 }
 
+.lui-nav-back.inactive{
+    visibility: hidden;
+}
 
 /***** CONTENT SHADOWING **********/
 
@@ -350,13 +364,55 @@ html, body{
 
 }
 
+.lui-focused-shadow{
+    position: absolute;
+    background-color: transparent;
+    z-index: 900;
+    top: 3em;
+    left: 0em;
+    right: 0em;
+    bottom: 0em;
+    visibility: hidden;
+    transition: background-color 0.3s;
+    transition-delay: visibility 0.3s;
+}
+
 /***** FORM RELATED ITEMS *********/
 
-.lui-emphasized{
-    max-width: 800px;
-    position: relative;
-    margin:auto;
+.lui-emphasized:first-child{
+    counter-reset: emphasized-offset 0em;
 }
+
+.lui-emphasized{
+    right: 2em;
+    left: 2em;
+    position: absolute;
+    margin:auto;
+    opacity: 1;
+    transition: opacity 0.2s;
+    background-color: whitesmoke;
+    z-index: 3;
+}
+
+.lui-emphasized:not(:first-child){
+    counter-increment: emphasized-offset 4em;
+    top: calc();
+}
+
+.lui-emphasized:last-child{
+    right:0;
+    left:0;
+    z-index: 5;
+}
+
+
+
+.lui-emphasized.fadeout{
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+
 
 body .lui-emphasized{
     margin-top: 30px;
@@ -427,4 +483,23 @@ body .lui-emphasized{
 
 .lui-button.lui-apply:active{
     background-image: linear-gradient( #0d52bf, #0d52bf);
+}
+
+@media only screen and (max-width: 768px){
+    .lui-emphasized{
+        max-width: 800px;
+        position: relative;
+        margin:auto;
+        opacity: 1;
+        transition: opacity 0.2s;
+    }
+    
+    .lui-emphasized:not(:last-child){
+        display: none;
+    }
+
+    .lui-emphasized.fadeIn{
+        opacity: 0;
+        transition: opacity 0s;
+    }
 }

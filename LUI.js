@@ -1,3 +1,19 @@
+//Utilities and extensions for basic JS
+
+if (!Array.prototype.last){
+    Array.prototype.last = function(){
+        return this[this.length - 1];
+    };
+};
+
+if (!Array.prototype.first){
+    Array.prototype.first = function(){
+        return this[0];
+    };
+};
+
+
+
 let toggleContentShadow = function(on = true, zIndex = 900){
     let contentShadow = document.getElementsByClassName('lui-content-shadowed')[0];
     if(on){
@@ -10,7 +26,32 @@ let toggleContentShadow = function(on = true, zIndex = 900){
     }
 }
 
+let navigateBack = function(){
+    
+    let emphArr = document.getElementsByClassName('lui-emphasized');
+    let fadeOut = emphArr[emphArr.length - 1];
+    let fadeIn = emphArr.length > 1 ? emphArr[emphArr.length - 2] : undefined;
 
+    if(emphArr.length <= 2) //TODO: hiding/showing the back button should be accomplished some other way thats more general ( maybe MutationObserver )
+        document.getElementsByClassName('lui-nav-back')[0].classList.add('inactive');
+
+    if(fadeIn != undefined) 
+        fadeIn.classList.add('fadein');
+
+    fadeOut.addEventListener('transitionend', function(){
+        this.remove();
+
+        if(fadeIn != undefined)
+            fadeIn.classList.remove('fadeIn');
+    });
+    fadeOut.classList.add('fadeout');
+    
+}
+
+//Handle back button
+document.getElementsByClassName('lui-nav-back')[0].addEventListener('click', function(e){
+    navigateBack();
+});
 
 
 //enables activation/deactivation of the navigation menu by pressing the burgermenu (before area of the lui-nav-bar-menu)
