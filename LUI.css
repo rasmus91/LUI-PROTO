@@ -158,14 +158,9 @@ html, body{
         content: '';
         background-color: transparent;
         position: absolute;
-        left: -100%;
+        right:0;
         top:0em;
         bottom:0;
-        width:100%;
-    }
-
-    .lui-nav-bar-menu:after{
-        background-color: #485a6c85;
     }
 
 
@@ -198,6 +193,14 @@ html, body{
 
     .lui-nav-bar-menu.active a{
         display: block;
+    }
+
+    .lui-nav-bar-menu-shadow{
+        position: relative;
+        background-color: gray;
+        height:100%;
+        width:100%;
+        z-index: 997;
     }
 
 }
@@ -325,9 +328,25 @@ html, body{
     box-shadow: inset 1px 1px 0px #f37329;
 }
 
-@media only screen and (max-width:768px){
 
-    
+/***** CONTENT SHADOWING **********/
+
+.lui-content-shadowed{
+    position: absolute;
+    background-color: transparent;
+    z-index: 900;
+    top: 3em;
+    left: 0em;
+    right: 0em;
+    bottom: 0em;
+    visibility: hidden;
+    transition: background-color 0.3s;
+    transition-delay: visibility 0.3s;
+}
+
+.lui-content-shadowed.active{
+    visibility: visible;
+    background-color: rgba(128, 128, 128, 0.548);
 
 }
 
