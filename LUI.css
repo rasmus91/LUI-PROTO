@@ -366,15 +366,29 @@ html, body{
 
 .lui-focused-shadow{
     position: absolute;
-    background-color: transparent;
-    z-index: 900;
+    background-color: rgba(128, 128, 128, 0.548);
+    z-index: 4;
     top: 3em;
     left: 0em;
     right: 0em;
     bottom: 0em;
     visibility: hidden;
-    transition: background-color 0.3s;
-    transition-delay: visibility 0.3s;
+}
+
+.lui-focused-shadow.active{
+    visibility: visible;
+    opacity: 1;
+    transition: opacity 200ms;
+}
+
+.lui-focused-shadow.fade{
+    opacity: 0;
+}
+
+@media only screen and (max-width:768px){
+    .lui-focused-shadow{
+        display:none;
+    }
 }
 
 /***** FORM RELATED ITEMS *********/
@@ -394,18 +408,11 @@ html, body{
     z-index: 3;
 }
 
-.lui-emphasized:not(:first-child){
-    counter-increment: emphasized-offset 4em;
-    top: calc();
-}
-
 .lui-emphasized:last-child{
     right:0;
     left:0;
     z-index: 5;
 }
-
-
 
 .lui-emphasized.fadeout{
     opacity: 0;
@@ -416,6 +423,7 @@ html, body{
 
 body .lui-emphasized{
     margin-top: 30px;
+    border-radius: 0.5em 0.5em;
 }
 
 .lui-form {

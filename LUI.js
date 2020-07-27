@@ -31,9 +31,13 @@ let navigateBack = function(){
     let emphArr = document.getElementsByClassName('lui-emphasized');
     let fadeOut = emphArr[emphArr.length - 1];
     let fadeIn = emphArr.length > 1 ? emphArr[emphArr.length - 2] : undefined;
-
-    if(emphArr.length <= 2) //TODO: hiding/showing the back button should be accomplished some other way thats more general ( maybe MutationObserver )
+    if(emphArr.length <= 1)
+        return;
+        
+    if(emphArr.length <= 2){ //TODO: hiding/showing the back button should be accomplished some other way thats more general ( maybe MutationObserver )
         document.getElementsByClassName('lui-nav-back')[0].classList.add('inactive');
+        document.getElementsByClassName('lui-focused-shadow')[0].classList.remove('active');
+    }
 
     if(fadeIn != undefined) 
         fadeIn.classList.add('fadein');
@@ -91,4 +95,11 @@ document.getElementsByClassName('lui-nav-bar-link-area')[0].addEventListener('cl
                     element.classList.add('chosen');
                 }
         });
+});
+
+//Handle 'modal' unfocus (back in desktop style)
+document.getElementsByClassName('lui-focused-shadow')[0].addEventListener('click', navigateBack);
+document.addEventListener("keyup", function(e){
+    if(e.key == 'Escape')
+        navigateBack();
 });
