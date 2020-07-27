@@ -36,6 +36,16 @@
     }
 }
 
+input {
+    background-color: #fafafa9d;
+    color: #273445;
+    border: 1px solid #333333;
+}
+
+input:focus{
+    box-shadow: 0 0 6px #0d52bf;
+}
+
 /***** MAIN LAYOUT ITEMS **********/
 
 html, body{
@@ -523,18 +533,91 @@ body .lui-emphasized{
     margin-top: 0;
 }
 
-.lui-table-nav{
-    background-image: linear-gradient(#fafafa, #dddddd);
-    background-color: white;
-    height: 3em;
+.lui-table-controls{
     border-radius: 0.5em 0.5em 0 0;
+    background-image: linear-gradient(#fafafa, #dddddd);
+    border-bottom: 1px solid #667885;
+}
+
+.lui-table-nav{
+    display: flex;
+    flex-flow: row;
+    height: 3em;
+    align-items: center;
+    justify-content: space-evenly;
+}
+
+.lui-table-nav .lui-table-title{
+    height: 100%;
+    font-size: 1em;
+    vertical-align: middle;
+    text-align: center;
+    margin:0;
+    padding-top: 0.8em;
 }
 
 .lui-table-header{
-    background-color: #d4d4d4;
     height: 2em;
 }
 
 .lui-table-body{
     height: calc(100% - 5em);
 }
+
+.lui-filter input{
+    height: 2.2em;
+    float:left;
+    padding: 0;
+    border-radius: 0 0.3em 0.3em 0;
+}
+
+.lui-filter div{
+    float:left;
+    background-image: linear-gradient(#e4c6fa, #cd9ef7);
+    height: 1.7em;
+    width: 1.7em;
+    border-radius: 0.3em 0 0 0.3em;
+    border: 1px #333333 solid;
+    margin-right: -1px;
+    cursor: pointer;
+}
+
+.lui-filter div:before{
+    position: absolute;
+    top:0.8em;
+    content: '►';
+    padding-left:0.4em;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.lui-table-row{
+    background-color: #fafafa;
+    border-radius: 0.4em;
+    border: 1px solid #485a6c;
+    height: 2.5em;
+    vertical-align: middle;
+}
+.lui-table-body .lui-table-row:first-of-type{
+    border-top-width: 0px;
+}
+
+.lui-table-body .lui-table-row:not(:last-of-type){
+    border-bottom-width: 0px;
+}
+
+[class*="lui-table-col-"].lui-col-header{
+    font-weight: 600;
+    color: #0e141f;
+}
+
+[class*="lui-table-col-"]{
+    padding:0.5em;
+    color: #273445;
+}
+
+.lui-table-col-1{ width:5%; float:left; }
+.lui-table-col-2{ width:10%; float:left; }
+.lui-table-col-3{ width:15%; float:left; }
+.lui-table-col-4{ width:20%; float:left; }
+.lui-table-col-5{ width:25%; float:left; }
+.lui-table-col-6{ width:30%; float:left; }
