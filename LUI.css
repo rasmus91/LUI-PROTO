@@ -44,17 +44,23 @@ html, body{
     margin: 0;
 }
 
-.lui-main{
-    position: relative;
-    counter-reset: emphasized-offset;
+body{
+    background-color: #d4d4d4;
 }
 
+.lui-main{
+    position: relative;
+    height:100%;  
+}
 
+.lui-content{
+    height:calc(100% - 3em); /* The height of the navbar is subtracted*/
+}
 
 @media only screen  and (max-width:768px){
 
-    [class*="lui-sidebar-*"]{
-        visibility: hidden;
+    [class*="lui-sidebar-"]{
+        display:none;
     }
 
 }
@@ -209,7 +215,7 @@ html, body{
     .lui-nav-bar-menu-shadow{
         position: relative;
         background-color: gray;
-        height:100%;
+        height:calc(100% - 3em);
         width:100%;
         z-index: 997;
     }
@@ -393,10 +399,6 @@ html, body{
 
 /***** FORM RELATED ITEMS *********/
 
-.lui-emphasized:first-child{
-    counter-reset: emphasized-offset 0em;
-}
-
 .lui-emphasized{
     right: 2em;
     left: 2em;
@@ -495,7 +497,7 @@ body .lui-emphasized{
 
 @media only screen and (max-width: 768px){
     .lui-emphasized{
-        max-width: 800px;
+        max-width: 766px;
         position: relative;
         margin:auto;
         opacity: 1;
@@ -510,4 +512,29 @@ body .lui-emphasized{
         opacity: 0;
         transition: opacity 0s;
     }
+}
+
+/****** TABLE LAYOUT **********/
+
+.lui-emphasized.lui-table{
+    position: relative;
+    height:calc(100% - 3em);
+    background-color: transparent;
+    margin-top: 0;
+}
+
+.lui-table-nav{
+    background-image: linear-gradient(#fafafa, #dddddd);
+    background-color: white;
+    height: 3em;
+    border-radius: 0.5em 0.5em 0 0;
+}
+
+.lui-table-header{
+    background-color: #d4d4d4;
+    height: 2em;
+}
+
+.lui-table-body{
+    height: calc(100% - 5em);
 }
