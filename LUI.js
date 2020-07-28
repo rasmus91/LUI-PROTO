@@ -1,18 +1,22 @@
-//Utilities and extensions for basic JS
+//Returns true if it is a DOM node
+function isNode(o){
+return (
+    typeof Node === "object" ? o instanceof Node : 
+    o && typeof o === "object" && typeof o.nodeType === "number" && typeof o.nodeName==="string"
+);
+}
 
-if (!Array.prototype.last){
-    Array.prototype.last = function(){
-        return this[this.length - 1];
-    };
-};
+//Returns true if it is a DOM element    
+function isElement(o){
+return (
+    typeof HTMLElement === "object" ? o instanceof HTMLElement : //DOM2
+    o && typeof o === "object" && o !== null && o.nodeType === 1 && typeof o.nodeName==="string"
+);
+}
 
-if (!Array.prototype.first){
-    Array.prototype.first = function(){
-        return this[0];
-    };
-};
-
-
+let isNodeOrElement = function(o){
+    return isElement(o) || isNode(0);
+}
 
 let toggleContentShadow = function(on = true, zIndex = 900){
     let contentShadow = document.getElementsByClassName('lui-content-shadowed')[0];
@@ -103,3 +107,84 @@ document.addEventListener("keyup", function(e){
     if(e.key == 'Escape')
         navigateBack();
 });
+
+// Table Logic
+
+class LuiTableHeader{
+    constructor(element, sortingFunc){
+        if(element == undefined)
+            throw new Error("A LuiTableHeader must be a DOM element or JSON object");
+
+        if(isNodeOrElement(element)){
+            this.constructFromDom(element, sortingFunc);
+        }else if(element.constructor === {}.constructor){
+            this.constructFromJson(element);
+        }else{
+            throw new Error("A LuiTableHeader must be a DOM element or JSON object");
+        }
+    }
+
+    constructFromDom(element){
+        this._headerElements = element.getElementsByClassName('lui-col-header');
+        this.headers = [];
+        for(var i = 0; i < this._headerElements.length; i++){
+            this.headers.push(this._headerElements[i].innerText);
+        }
+    }
+
+    setSortingFunc(sortingFunc){
+        for(var i = 0; i < this._headerElements.length; i++){
+            this._headerElements[i].addEventListener('click', sortingFunc(e, i));
+        }
+    }
+}
+
+class LuiTable{
+    constructor(element){
+        if(element == undefined)
+            throw new Error("A LuiTable must be a DOM element or JSON object");
+
+        if(isNodeOrElement(element)){
+            this.constructFromDom(element);
+        }else if(element.constructor === {}.constructor){
+            this.constructFromJson(element);
+        }else{
+            throw new Error("A LuiTable must be a DOM element or JSON object");
+        }
+    }
+
+    suggestFilters(element){
+        let val = element.value;
+        let matches = [];
+
+        this.header.headers.forEach(function(e){
+            //normalize text, and then match via regex
+                //if match, create div and add to matches
+        });
+
+        //if matches is empty, show element with 'no available filters'
+
+        //if match is not empty, show list with available filters
+    }
+
+    constructFromDom(element){
+        this.setTableHeader(element.getElementsByClassName('lui-table-header')[0]);
+        this.setFilterEntry(element.getElementsByClassName('lui-filter')[0]);
+    }
+
+    constructFromJson(element){
+        //Construct the table 
+    }
+    
+    setFilterEntry(filter){
+        filter.getElementsByTagName('input')[0].addEventListener('keyup', this.suggestFilters(this));
+    }
+
+    setTableHeader(header){
+        this.header = new LuiTableHeader(header, function(){});
+    }
+
+
+}
+
+

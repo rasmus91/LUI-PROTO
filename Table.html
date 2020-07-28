@@ -33,34 +33,65 @@
             <div class="lui-emphasized lui-table">
                 <div class="lui-table-controls">
                     <div class="lui-table-nav">
-                        <h3 class="lui-table-title">Test Table</h3>
+                        <h3 class="lui-table-title">Kunde Kartotek</h3>
                         <div class="lui-filter">
                             <div></div>
-                            <input type="text">
+                            <input type="text" placeholder="Tilføj Filter">
                         </div>
                     </div>
 
                     <div class="lui-table-header">
-                        <div class="lui-table-col-5 lui-col-header">Navn: </div>
-                        <div class="lui-table-col-5 lui-col-header">Email: </div>
-                        <div class="lui-table-col-5 lui-col-header">Telefon: </div>
-                        <div class="lui-table-col-5 lui-col-header">Addresse: </div>
+                        <div class="lui-table-col-5 lui-col-header">Navn</div>
+                        <div class="lui-table-col-5 lui-col-header">Email</div>
+                        <div class="lui-table-col-5 lui-col-header">Telefon</div>
+                        <div class="lui-table-col-5 lui-col-header">Addresse</div>
                     </div>
                 </div>
                 <div class="lui-table-body">
-                    <div class="lui-table-row">
-                        <div class="lui-table-col-5">Pedersen</div>
-                        <div class="lui-table-col-5">findus@sverige.se</div>
-                        <div class="lui-table-col-5">12345678</div>
-                        <div class="lui-table-col-5">Ålandsvej 2</div>
+                    <div>
+                        <div class="lui-table-row">
+                            <div class="lui-table-col-5">Pedersen</div>
+                            <div class="lui-table-col-5">findus@sverige.se</div>
+                            <div class="lui-table-col-5">12345678</div>
+                            <div class="lui-table-col-5">Ålandsvej 2</div>
+                        </div>
+    
+                        <div class="lui-table-row">
+                            <div class="lui-table-col-5">Findus</div>
+                            <div class="lui-table-col-5">pedersen@sverige.se</div>
+                            <div class="lui-table-col-5">8457854</div>
+                            <div class="lui-table-col-5">Ålandsvej 2</div>
+                        </div>
+    
+                        <div class="lui-table-row">
+                            <div class="lui-table-col-5">Findus</div>
+                            <div class="lui-table-col-5">pedersen@sverige.se</div>
+                            <div class="lui-table-col-5">8457854</div>
+                            <div class="lui-table-col-5">Ålandsvej 2</div>
+                        </div>
+    
+                        <div class="lui-table-row">
+                            <div class="lui-table-col-5">Findus</div>
+                            <div class="lui-table-col-5">pedersen@sverige.se</div>
+                            <div class="lui-table-col-5">8457854</div>
+                            <div class="lui-table-col-5">Ålandsvej 2</div>
+                        </div>
+    
+                        <div class="lui-table-row">
+                            <div class="lui-table-col-5">Findus</div>
+                            <div class="lui-table-col-5">pedersen@sverige.se</div>
+                            <div class="lui-table-col-5">8457854</div>
+                            <div class="lui-table-col-5">Ålandsvej 2</div>
+                        </div>
+    
+                        <div class="lui-table-row">
+                            <div class="lui-table-col-5">Findus</div>
+                            <div class="lui-table-col-5">pedersen@sverige.se</div>
+                            <div class="lui-table-col-5">8457854</div>
+                            <div class="lui-table-col-5">Ålandsvej 2</div>
+                        </div>
                     </div>
-
-                    <div class="lui-table-row">
-                        <div class="lui-table-col-5">Findus</div>
-                        <div class="lui-table-col-5">pedersen@sverige.se</div>
-                        <div class="lui-table-col-5">8457854</div>
-                        <div class="lui-table-col-5">Ålandsvej 2</div>
-                    </div>
+                    
 
                 </div>
             </div>
@@ -69,4 +100,7 @@
         <div class="lui-col-3 lui-sidebar-right"></div>
     </div>
     <script src="LUI.js"></script>
+    <script>
+        const table = new LuiTable(document.getElementsByClassName('lui-table')[0]);
+    </script>
 </body>
