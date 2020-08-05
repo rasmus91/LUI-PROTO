@@ -1,3 +1,49 @@
+class LuiElement{
+    __domElement = undefined;
+    __cssName = undefined;
+    __eventListeners = [];
+
+    get domElement(){
+        return this.__domElement;
+    }
+
+    get cssName(){
+        return this.__cssName;
+    }
+
+    constructor(element, cssName = undefined){
+        if(isNodeOrElement(element))
+            this.__domElement = element
+        else if(element instanceof String)
+            this.__domElement = document.createElement(element);
+        else
+            throw new Error('Element must be a valid HTML Tag name');
+        
+        if(cssName != undefined && cssName instanceof String)
+            this.__cssName = cssName;
+
+        if(this.__cssName != undefined)
+            this.__domElement.classList.add(cssName);
+    }
+
+    on(eventname, handler){
+
+        this.__eventListeners.push({
+            selector: undefined,
+            event: eventname,
+            handler: handler
+        });
+
+        this.__domElement.addEventListener(event, handler);
+    }
+
+    clearEventHandlers(){
+        this.__eventListeners.forEach(function(item, index){
+            this.domElement.removeEventListener(item.event, item.handler);
+        });        
+    }
+}
+
 //Returns true if it is a DOM node
 function isNode(o){
 return (
@@ -109,6 +155,54 @@ document.addEventListener("keyup", function(e){
 });
 
 // Table Logic
+class LuiTable{
+    constructor(element){
+        if(element == undefined)
+            throw new Error("A LuiTable must be a DOM element or JSON object");
+
+        if(isNodeOrElement(element)){
+            this.constructFromDom(element);
+        }else if(element.constructor === {}.constructor){
+            this.constructFromJson(element);
+        }else{
+            throw new Error("A LuiTable must be a DOM element or JSON object");
+        }
+    }
+    
+
+    constructFromDom(element){
+        this.setTableHeader(element.getElementsByClassName('lui-table-header')[0]);
+        this.setFilterEntry(element.getElementsByClassName('lui-filter')[0]);
+    }
+
+    constructFromJson(element){
+        //Construct the table 
+    }
+    
+    setFilterEntry(filter){
+        this.filter = new LuiTableFilter(filter, this);
+        
+    }
+
+    setTableHeader(header){
+        this.header = new LuiTableHeader(header, function(){});
+    }
+
+
+}
+
+class LuiEntry extends LuiElement{
+    constructor(element = null, cssName = undefined){
+        super(element, cssName);
+        super.domElement.type = 'text';
+    }
+
+    set onInputChange(handler){
+        super.on('keyup', handler);
+    }
+
+    
+}
 
 class LuiTableHeader{
     constructor(element, sortingFunc){
@@ -139,76 +233,109 @@ class LuiTableHeader{
     }
 }
 
-class LuiTable{
-    constructor(element){
-        if(element == undefined)
-            throw new Error("A LuiTable must be a DOM element or JSON object");
+class LuiTableFilterSuggestions extends LuiElement{
+    cssInactive = 'inactive';
+    state = false;
+    options = [];
+
+    constructor(element, filterOptions = []){
+        super(
+            isNodeOrElement(element) ? element : 'ul',
+            'lui-table-filter-suggestions'
+        );
+
+        if(!super.domElement.classList.contains(this.cssInactive))
+            super.domElement.classList.add(this.cssInactive);
+        
+        this.filterOptions = filterOptions;
+    }
+
+    setState(active = true){
+
+        if(active != this.state && active)
+            super.domElement.classList.remove(this.cssInactive);
+        else
+            super.domElement.classList.add(this.cssInactive);
+
+        this.state = active;
+    }
+
+    getState(){
+        return this.state;
+    }
+
+    set filterOptions(filterOptions = []){
+        this.options = [];
+        filterOptions.forEach(function(item, index){
+            let option = document.createElement('li');
+            option.innerText = item;
+
+            domElement.addChild(option);
+            this.options.push({
+                lowCaption: item.toLowerCase(),
+                upCaption: item.toUpperCase()
+            });
+        });
+    }
+
+    filter(text = ''){
+        if(text = '' || text == null)
+            return this.showAll();
+        
+        text = '/' + text + '/';
+
+        let regex = new RegExp(text).compile();
+        this.options.forEach(function(item, index){
+            if(! (
+                regex.test(item.lowCaption) || 
+                regex.test(item.upCaption)
+                )
+            )
+                this.domElement.children[index].style.display = 'none';
+            else
+                this.domElement.children[index].style.display = '';
+        });
+    }
+
+    showAll(){
+        for(var i = 0; this.domElement.children.length; i++){
+            this.domElement.children[i].style.display = '';
+        }
+    }
+
+}
+
+class LuiTableFilter extends LuiElement{
+
+    constructor(element, parentTable){
+        super(
+            isNodeOrElement(element) ? element : 'div', 
+            'lui-filter'
+        );
+
+        if(parentTable == null || ! parentTable instanceof LuiTable)
+            throw new Error('parentTable must be a LuiTable class instance')
+
+        this.table = parentTable;
 
         if(isNodeOrElement(element)){
             this.constructFromDom(element);
-        }else if(element.constructor === {}.constructor){
-            this.constructFromJson(element);
         }else{
-            throw new Error("A LuiTable must be a DOM element or JSON object");
+            throw new Error("A LuiTableHeader must be a DOM element");
         }
-    }
-    //TODO: Finish this method, and test it thorougly
-    suggestFilters(element){
-        if(this.filterSuggestions == null || this.filterSuggestions == undefined){
-            this.filterSuggestions = document.createElement('ul');
-            this.filterSuggestions.classList.add('lui-table-filter-suggestions');
-        }
-
-        if(element.value == ''){
-            this.filterSuggestions.classList.add('inactive');
-            return;
-        }
-
-        this.filterSuggestions.classList.remove('inactive');
-
-        let val = element.value;
-        let regex = new RegExp('/' + val + '/').compile();
-        let matches = [];
-        this.header.headers.forEach(function(item, index){
-            let capText = item.toUpperCase();
-            let lowText = item.toLowerCase();
-            //normalize text, and then match via regex
-            if(regex.test(capText) || regex.test(lowText)){
-                //if match, create div and add to matches
-                this.filterSuggestions.append(
-                )
-            }
-            
-            
-        });
-
-        //if matches is empty, show element with 'no available filters'
-
-        //if match is not empty, show list with available filters
     }
 
     constructFromDom(element){
-        this.setTableHeader(element.getElementsByClassName('lui-table-header')[0]);
-        this.setFilterEntry(element.getElementsByClassName('lui-filter')[0]);
+        this.entry = new LuiEntry(element.getElementsByTagName('input')[0]);
+        this.button = new LuiElement(element.getElementsByTagName('div')[0]);
+        this.suggestions = new LuiTableFilterSuggestions(element.getElementsByTagName('ul')[0]);
+        this.entry.onInputChange = alert('bob');
+        this.entry.domElement.style.backgroundcolor = 'yellow';
     }
 
-    constructFromJson(element){
-        //Construct the table 
-    }
-    
-    setFilterEntry(filter){
-        let table = this;
-        this.filterSuggestions = filter.getElementsByTagName('ul')[0];
-        filter.getElementsByTagName('input')[0].addEventListener('keyup',  function(){
-            table.suggestFilters(this);
-        });
-    }
-
-    setTableHeader(header){
-        this.header = new LuiTableHeader(header, function(){});
-    }
-
-
+    //TODO: Finish this method, and test it thorougly
 }
+
+
 
 
