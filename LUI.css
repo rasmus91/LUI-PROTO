@@ -641,3 +641,17 @@ body .lui-emphasized{
 .lui-table-col-4{ width:20%; float:left; }
 .lui-table-col-5{ width:25%; float:left; }
 .lui-table-col-6{ width:30%; float:left; }
+
+ul.lui-filter-suggestions{
+    position: absolute;
+    min-height: 2em;
+    width: 13em;
+    background-color: whitesmoke;
+    top: 1.3em;
+    border-radius: 0 0 0.3em 0.3em;
+    border: #485a6c solid 1px;
+}
+
+ul.lui-filter-suggestions.inactive{
+    display:none;
+}

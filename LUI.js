@@ -152,14 +152,34 @@ class LuiTable{
             throw new Error("A LuiTable must be a DOM element or JSON object");
         }
     }
-
+    //TODO: Finish this method, and test it thorougly
     suggestFilters(element){
-        let val = element.value;
-        let matches = [];
+        if(this.filterSuggestions == null || this.filterSuggestions == undefined){
+            this.filterSuggestions = document.createElement('ul');
+            this.filterSuggestions.classList.add('lui-table-filter-suggestions');
+        }
 
-        this.header.headers.forEach(function(e){
+        if(element.value == ''){
+            this.filterSuggestions.classList.add('inactive');
+            return;
+        }
+
+        this.filterSuggestions.classList.remove('inactive');
+
+        let val = element.value;
+        let regex = new RegExp('/' + val + '/').compile();
+        let matches = [];
+        this.header.headers.forEach(function(item, index){
+            let capText = item.toUpperCase();
+            let lowText = item.toLowerCase();
             //normalize text, and then match via regex
+            if(regex.test(capText) || regex.test(lowText)){
                 //if match, create div and add to matches
+                this.filterSuggestions.append(
+                )
+            }
+            
+            
         });
 
         //if matches is empty, show element with 'no available filters'
@@ -177,7 +197,11 @@ class LuiTable{
     }
     
     setFilterEntry(filter){
-        filter.getElementsByTagName('input')[0].addEventListener('keyup', this.suggestFilters(this));
+        let table = this;
+        this.filterSuggestions = filter.getElementsByTagName('ul')[0];
+        filter.getElementsByTagName('input')[0].addEventListener('keyup',  function(){
+            table.suggestFilters(this);
+        });
     }
 
     setTableHeader(header){
