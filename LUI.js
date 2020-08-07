@@ -34,7 +34,7 @@ class LuiElement{
             handler: handler
         });
 
-        this.__domElement.addEventListener(event, handler);
+        this.__domElement.addEventListener(eventname, handler);
     }
 
     clearEventHandlers(){
@@ -171,23 +171,26 @@ class LuiTable{
     
 
     constructFromDom(element){
-        this.setTableHeader(element.getElementsByClassName('lui-table-header')[0]);
-        this.setFilterEntry(element.getElementsByClassName('lui-filter')[0]);
+        this.TableHeader = element.getElementsByClassName('lui-table-header')[0];
+        this.FilterEntry = element.getElementsByClassName('lui-filter')[0];
     }
 
     constructFromJson(element){
         //Construct the table 
     }
     
-    setFilterEntry(filter){
+    set FilterEntry(filter){
         this.filter = new LuiTableFilter(filter, this);
         
     }
 
-    setTableHeader(header){
+    set TableHeader(header){
         this.header = new LuiTableHeader(header, function(){});
     }
 
+    get TableHeader(){
+        return this.header;
+    }
 
 }
 
@@ -201,6 +204,13 @@ class LuiEntry extends LuiElement{
         super.on('keyup', handler);
     }
 
+    set getsFocus(handler){
+        super.on('focusin', handler);
+    }
+
+    set lostFocus(handler){
+        super.on('focusout', handler);
+    }
     
 }
 
@@ -235,8 +245,8 @@ class LuiTableHeader{
 
 class LuiTableFilterSuggestions extends LuiElement{
     cssInactive = 'inactive';
-    state = false;
-    options = [];
+    __state__ = false;
+    __options__ = [];
 
     constructor(element, filterOptions = []){
         super(
@@ -250,46 +260,49 @@ class LuiTableFilterSuggestions extends LuiElement{
         this.filterOptions = filterOptions;
     }
 
-    setState(active = true){
+    set state(active){
 
-        if(active != this.state && active)
+        if(active != this.__state__ && active)
             super.domElement.classList.remove(this.cssInactive);
         else
             super.domElement.classList.add(this.cssInactive);
 
-        this.state = active;
+        this.__state__ = active;
     }
 
-    getState(){
-        return this.state;
+    get state(){
+        return this.__state__;
     }
 
     set filterOptions(filterOptions = []){
-        this.options = [];
+        let suggestions = this;
+        this.__options__ = [];
+        let options = this.__options__;
+        super.domElement.innerHTML = '';
         filterOptions.forEach(function(item, index){
             let option = document.createElement('li');
             option.innerText = item;
 
-            domElement.addChild(option);
-            this.options.push({
+            suggestions.domElement.appendChild(option);
+            options.push({
+                caption: item,
                 lowCaption: item.toLowerCase(),
                 upCaption: item.toUpperCase()
             });
         });
     }
 
-    filter(text = ''){
-        if(text = '' || text == null)
-            return this.showAll();
-        
-        text = '/' + text + '/';
+    set filter(text){
 
-        let regex = new RegExp(text).compile();
-        this.options.forEach(function(item, index){
-            if(! (
-                regex.test(item.lowCaption) || 
-                regex.test(item.upCaption)
-                )
+        if(text == '' || text == null)
+            return this.showAll();
+
+        let regex = new RegExp(text);
+        this.__options__.forEach((item, index) => {
+            if(
+                !regex.test(item.caption)    &&
+                !regex.test(item.lowCaption) &&
+                !regex.test(item.upCaption)
             )
                 this.domElement.children[index].style.display = 'none';
             else
@@ -298,7 +311,7 @@ class LuiTableFilterSuggestions extends LuiElement{
     }
 
     showAll(){
-        for(var i = 0; this.domElement.children.length; i++){
+        for(var i = 0; i < this.domElement.children.length; i++){
             this.domElement.children[i].style.display = '';
         }
     }
@@ -329,8 +342,16 @@ class LuiTableFilter extends LuiElement{
         this.entry = new LuiEntry(element.getElementsByTagName('input')[0]);
         this.button = new LuiElement(element.getElementsByTagName('div')[0]);
         this.suggestions = new LuiTableFilterSuggestions(element.getElementsByTagName('ul')[0]);
-        this.entry.onInputChange = alert('bob');
-        this.entry.domElement.style.backgroundcolor = 'yellow';
+        this.entry.onInputChange = (e) => {
+            this.suggestions.filter = e.target.value;
+        };
+        this.entry.getsFocus = (e) => {
+            this.suggestions.state = true;
+        };
+        this.entry.lostFocus = (e) => {
+            this.suggestions.state = false;
+        };
+        this.suggestions.filterOptions = this.table.TableHeader.headers;
     }
 
     //TODO: Finish this method, and test it thorougly

@@ -650,8 +650,25 @@ ul.lui-filter-suggestions{
     top: 1.3em;
     border-radius: 0 0 0.3em 0.3em;
     border: #485a6c solid 1px;
+    transition: max-height 150ms;
+    max-height: 50em;
+}
+
+ul.lui-filter-suggestions:empty:before{
+    content: 'Ingen Match';
+    width:13em;
+    top: 0;
+    bottom:0;
+    width:100%;
 }
 
 ul.lui-filter-suggestions.inactive{
-    display:none;
+    max-height: 0;
+    min-height: 0;
+    transition: min-height 150ms;
+    transition-delay: border 150ms;
+}
+
+ul.lui-filter-suggestions.inactive li{
+    display: none;
 }
