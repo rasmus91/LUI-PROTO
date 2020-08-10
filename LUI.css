@@ -652,6 +652,7 @@ ul.lui-filter-suggestions{
     border: #485a6c solid 1px;
     transition: max-height 150ms;
     max-height: 50em;
+    list-style-type: none;
 }
 
 ul.lui-filter-suggestions:empty:before{
@@ -671,4 +672,17 @@ ul.lui-filter-suggestions.inactive{
 
 ul.lui-filter-suggestions.inactive li{
     display: none;
+}
+
+ul.lui-filter-suggestions li{
+    width: 100%;
+    cursor: pointer;
+}
+
+ul.lui-filter-suggestions li.marked{
+    background-color: #ffa154;
+}
+
+ul.lui-filter-suggestions li:hover{
+    background-color: #ffc27d;
 }

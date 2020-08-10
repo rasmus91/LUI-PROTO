@@ -1,21 +1,26 @@
 class LuiElement{
-    __domElement = undefined;
+    __domElement__ = undefined;
     __cssName = undefined;
     __eventListeners = [];
+    __children__ = new Set();
 
     get domElement(){
-        return this.__domElement;
+        return this.__domElement__;
     }
 
     get cssName(){
         return this.__cssName;
     }
 
+    get children(){
+        return this.__children__;
+    }
+
     constructor(element, cssName = undefined){
         if(isNodeOrElement(element))
-            this.__domElement = element
-        else if(element instanceof String)
-            this.__domElement = document.createElement(element);
+            this.__domElement__ = element
+        else if(typeof element === 'string')
+            this.__domElement__ = document.createElement(element);
         else
             throw new Error('Element must be a valid HTML Tag name');
         
@@ -23,7 +28,7 @@ class LuiElement{
             this.__cssName = cssName;
 
         if(this.__cssName != undefined)
-            this.__domElement.classList.add(cssName);
+            this.__domElement__.classList.add(cssName);
     }
 
     on(eventname, handler){
@@ -34,13 +39,40 @@ class LuiElement{
             handler: handler
         });
 
-        this.__domElement.addEventListener(eventname, handler);
+        this.__domElement__.addEventListener(eventname, handler);
     }
 
     clearEventHandlers(){
         this.__eventListeners.forEach(function(item, index){
             this.domElement.removeEventListener(item.event, item.handler);
         });        
+    }
+
+    addChild(child){
+        if(!child instanceof LuiElement)
+            throw new Error('a LuiElement child must be a LuiElement!');
+
+        if(this.__children__.has(child))
+            throw new Error('a LuiElement child must only occur as a child once')
+        
+        this.__children__.add(child);
+        this.__domElement__.appendChild(child.domElement);
+    }
+
+    removeChild(child){
+        if(!child instanceof LuiElement)
+            throw new Error('a LuiElement child must be a LuiElement!');
+        
+        this.__children__.delete(child);
+        child.domElement.remove();
+    }
+
+    clearChildren(){
+        this.__children__.forEach((e, i) => {
+            e.domElement.remove();
+        });
+
+        this.__children__.clear();
     }
 }
 
@@ -243,10 +275,35 @@ class LuiTableHeader{
     }
 }
 
+class LuiTableFilterSuggestion extends LuiElement{
+
+    __cssMarked__ = 'marked';
+    __marked__ = false;
+
+    constructor(contents){
+        super('li', undefined);
+        super.domElement.innerText = contents;
+    }
+
+    set marked(bool){
+        this.__marked__ = bool;
+        if(this.__marked__)
+            this.domElement.classList.add(this.__cssMarked__);
+        else
+            this.domElement.classList.remove(this.__cssMarked__);
+    }
+
+    get marked(){
+        return this.__cssMarked__;
+    }
+
+}
+
 class LuiTableFilterSuggestions extends LuiElement{
     cssInactive = 'inactive';
     __state__ = false;
     __options__ = [];
+    __markedIndex__ = -1;
 
     constructor(element, filterOptions = []){
         super(
@@ -274,40 +331,45 @@ class LuiTableFilterSuggestions extends LuiElement{
         return this.__state__;
     }
 
-    set filterOptions(filterOptions = []){
+    set filterOptions(filters = []){
         let suggestions = this;
         this.__options__ = [];
+        super.clearChildren();
         let options = this.__options__;
         super.domElement.innerHTML = '';
-        filterOptions.forEach(function(item, index){
-            let option = document.createElement('li');
-            option.innerText = item;
-
-            suggestions.domElement.appendChild(option);
-            options.push({
-                caption: item,
-                lowCaption: item.toLowerCase(),
-                upCaption: item.toUpperCase()
-            });
+        filters.forEach(function(item, index){
+            suggestions.addChild(
+                new LuiTableFilterSuggestion(item)
+            );
         });
     }
 
-    set filter(text){
-
-        if(text == '' || text == null)
-            return this.showAll();
-
-        let regex = new RegExp(text);
-        this.__options__.forEach((item, index) => {
-            if(
-                !regex.test(item.caption)    &&
-                !regex.test(item.lowCaption) &&
-                !regex.test(item.upCaption)
-            )
-                this.domElement.children[index].style.display = 'none';
-            else
-                this.domElement.children[index].style.display = '';
+    set markedIndex(index){
+        if(index < 0)
+            this.__markedIndex__ = this.children.size - 1;
+        else if(index > this.children.size - 1)
+            this.__markedIndex__ = 0;
+        else
+            this.__markedIndex__ = index;
+        
+        this.children.forEach((e) => {
+            e.marked = false;
         });
+
+        if(this.__markedIndex__ > -1)
+            [...this.children][this.__markedIndex__].marked = true;
+        
+    }
+
+    get markedIndex(){
+        return this.__markedIndex__;
+    }
+
+    clearMarking(){
+        this.children.forEach((e) => {
+            e.marked = false;
+        });
+        this.__markedIndex__ = -1;
     }
 
     showAll(){
@@ -343,13 +405,32 @@ class LuiTableFilter extends LuiElement{
         this.button = new LuiElement(element.getElementsByTagName('div')[0]);
         this.suggestions = new LuiTableFilterSuggestions(element.getElementsByTagName('ul')[0]);
         this.entry.onInputChange = (e) => {
-            this.suggestions.filter = e.target.value;
+            //check if key is direction up, down or enter
+            switch(e.code)
+            {
+                case 'ArrowUp':
+                    this.suggestions.markedIndex = this.suggestions.markedIndex - 1;
+                break;
+                case 'ArrowDown':
+                    this.suggestions.markedIndex = this.suggestions.markedIndex + 1;
+                break;
+                case 'Enter':
+                    if(e.target.value == '')
+                        return;
+                    else
+
+                        //apply filter
+                break;
+                default:
+                    this.suggestions.filter = e.target.value;
+            }
         };
         this.entry.getsFocus = (e) => {
             this.suggestions.state = true;
         };
         this.entry.lostFocus = (e) => {
             this.suggestions.state = false;
+            this.suggestions.clearMarking();
         };
         this.suggestions.filterOptions = this.table.TableHeader.headers;
     }
