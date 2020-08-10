@@ -1,19 +1,32 @@
 class LuiElement{
+    static __domMap__ = new Map();
     __domElement__ = undefined;
-    __cssName = undefined;
-    __eventListeners = [];
+    __cssName__ = undefined;
+    __eventListeners__ = [];
     __children__ = new Set();
+    __parent__ = undefined;
 
     get domElement(){
         return this.__domElement__;
     }
 
     get cssName(){
-        return this.__cssName;
+        return this.__cssName__;
     }
 
     get children(){
         return this.__children__;
+    }
+
+    set parent(parent){
+        if(! parent instanceof LuiElement)
+            throw new Error('a LUI parent must be an instance of LuiElement');
+        
+        this.__parent__ = parent;
+    }
+
+    get parent(){
+        return this.__parent__;
     }
 
     constructor(element, cssName = undefined){
@@ -25,15 +38,17 @@ class LuiElement{
             throw new Error('Element must be a valid HTML Tag name');
         
         if(cssName != undefined && cssName instanceof String)
-            this.__cssName = cssName;
+            this.__cssName__ = cssName;
 
-        if(this.__cssName != undefined)
+        if(this.__cssName__ != undefined)
             this.__domElement__.classList.add(cssName);
+
+        LuiElement.__domMap__.set(this.__domElement__, this);
     }
 
     on(eventname, handler){
 
-        this.__eventListeners.push({
+        this.__eventListeners__.push({
             selector: undefined,
             event: eventname,
             handler: handler
@@ -43,7 +58,7 @@ class LuiElement{
     }
 
     clearEventHandlers(){
-        this.__eventListeners.forEach(function(item, index){
+        this.__eventListeners__.forEach(function(item, index){
             this.domElement.removeEventListener(item.event, item.handler);
         });        
     }
@@ -53,27 +68,39 @@ class LuiElement{
             throw new Error('a LuiElement child must be a LuiElement!');
 
         if(this.__children__.has(child))
-            throw new Error('a LuiElement child must only occur as a child once')
+            return;
         
         this.__children__.add(child);
+        child.parent = this;
         this.__domElement__.appendChild(child.domElement);
     }
 
-    removeChild(child){
-        if(!child instanceof LuiElement)
-            throw new Error('a LuiElement child must be a LuiElement!');
-        
-        this.__children__.delete(child);
-        child.domElement.remove();
-    }
-
     clearChildren(){
-        this.__children__.forEach((e, i) => {
-            e.domElement.remove();
+        this.__children__.forEach((e) => {
+            e.remove();
         });
-
-        this.__children__.clear();
     }
+
+    remove(extraHandling = undefined){
+        if(this.children.size)
+            this.children.forEach((e) => {
+                e.remove();
+            });
+
+        if(parent instanceof LuiElement)
+            parent.children.delete(this);
+        
+        LuiElement.__domMap__.delete(this.domElement);
+
+        this.domElement.remove();
+
+        if(isFunction(extraHandling))
+            extraHandling(this);
+    }
+}
+
+function isFunction(functionToCheck) {
+    return functionToCheck && {}.toString.call(functionToCheck) === '[object Function]';
 }
 
 //Returns true if it is a DOM node
@@ -187,10 +214,12 @@ document.addEventListener("keyup", function(e){
 });
 
 // Table Logic
-class LuiTable{
+class LuiTable extends LuiElement{
+    static get cssName(){
+        return 'lui-table';
+    }
     constructor(element){
-        if(element == undefined)
-            throw new Error("A LuiTable must be a DOM element or JSON object");
+        super(element, LuiTable.cssName);
 
         if(isNodeOrElement(element)){
             this.constructFromDom(element);
@@ -203,8 +232,11 @@ class LuiTable{
     
 
     constructFromDom(element){
+        this.columnFilters = element.getElementsByClassName('lui-table-active-filters')[0];
         this.TableHeader = element.getElementsByClassName('lui-table-header')[0];
         this.FilterEntry = element.getElementsByClassName('lui-filter')[0];
+        
+
     }
 
     constructFromJson(element){
@@ -218,6 +250,14 @@ class LuiTable{
 
     set TableHeader(header){
         this.header = new LuiTableHeader(header, function(){});
+    }
+
+    set columnFilters(filters){
+        this.__columnFilters__ = new LuiTableColumnFilters(this, filters);
+    }
+
+    get columnFilters(){
+        return this.__columnFilters__;
     }
 
     get TableHeader(){
@@ -335,7 +375,6 @@ class LuiTableFilterSuggestions extends LuiElement{
         let suggestions = this;
         this.__options__ = [];
         super.clearChildren();
-        let options = this.__options__;
         super.domElement.innerHTML = '';
         filters.forEach(function(item, index){
             suggestions.addChild(
@@ -380,6 +419,42 @@ class LuiTableFilterSuggestions extends LuiElement{
 
 }
 
+class LuiTableColumnFilter extends LuiElement{
+    __header__ = '';
+    __filter__ = '';
+
+    constructor(header, filter){
+        super('div');
+        this.__header__ = header;
+        this.__filter__ = filter;
+
+        this.domElement.innerText = `${this.__header__}:${this.__filter__}`;
+    }
+}
+
+class LuiTableColumnFilters extends LuiElement{
+
+    constructor(parentTable, element = 'div'){
+            super(element, 'lui-table-active-filters');
+            this.parent = parentTable;
+            this.on('click', (e) => {
+                let element = LuiElement.__domMap__.get(e.target);
+                if(element != this)
+                    element.remove();
+            });
+    }
+
+    add(index, filter){
+        this.addChild(
+            new LuiTableColumnFilter(
+                this.parent.TableHeader.headers[index],
+                filter
+            )
+        );
+    }
+
+}
+
 class LuiTableFilter extends LuiElement{
 
     constructor(element, parentTable){
@@ -418,7 +493,12 @@ class LuiTableFilter extends LuiElement{
                     if(e.target.value == '')
                         return;
                     else
-
+                        this.table.columnFilters.add(
+                            this.suggestions.markedIndex,
+                            e.target.value
+                        );
+                        e.target.value = 0;
+                        this.suggestions.clearMarking();
                         //apply filter
                 break;
                 default:
