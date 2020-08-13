@@ -515,7 +515,106 @@ class LuiTableFilter extends LuiElement{
         this.suggestions.filterOptions = this.table.TableHeader.headers;
     }
 
-    //TODO: Finish this method, and test it thorougly
+}
+
+class LuiTableColumn{
+    __width__ = 5;
+    __cells__ = new Set();
+
+    constructor(dataType){
+        switch(dataType)
+        {
+
+        }
+    }
+
+    set width(integer){
+        if(integer > 6)
+            integer = 6;
+        else if(integer < 1)
+            integer = 1;
+        
+        this.__width__ = integer;
+
+        this.__cells__.forEach((c) => {
+            c.width = this.__width__;
+        });
+    }
+
+    get width(){
+        return this.__width__;
+    }
+
+    addCell(cell){
+        if(!cell instanceof LuiTableRowCell)
+            throw new Error('Must be a LuiTableRowCell');
+        
+        this.__cells__.add(cell);
+        cell.width = this.width;
+    }
+
+    removeCell(cell){
+        if(!cell instanceof LuiTableRowCell)
+            throw new Error('Must be a LuiTableRowCell');
+        this.__cells__.delete(cell);
+    }
+
+}
+
+class LuiTableRowCell extends LuiElement{
+    __column__ = undefined;
+    __cssName__ = 'lui-table-col-';
+
+    get column(){
+        return this.__column__;
+    }
+
+    set width(integer){
+        this.domElement.classList = `${this.__cssName__}${integer}`;
+    }
+
+    constructor(column, row, element){
+        super(element); //TODO: add class based on column width
+
+        this.parent = row;
+        this.__column__ = column;
+        column.addCell(this);
+    }
+
+    remove(){
+        this.column.removeCell(this);
+        super.remove();
+    }
+}
+
+class LuiTableRow extends LuiElement{
+
+    __collapsed__ = false;
+
+    constructor(element, parentTable){
+        super(element, 'lui-table-row');
+
+        parent = parentTable;
+    }
+
+    collapse(){
+        if(!this.__collapsed__){
+            this.on('transitioned', () => {
+                this.domElement.style.display = 'none';
+                this.domElement.classList.remove('collapse');
+            });
+            this.domElement.classList.add('collapse');
+        }
+    }
+
+    unfold(){
+        if(this.__collapsed__){
+            this.on('transitioned', () => {
+                this.domElement.style.display = 
+            })
+        }
+    }
+
 }
 
 

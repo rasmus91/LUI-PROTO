@@ -602,6 +602,7 @@ body .lui-emphasized{
     height: 2.5em;
     vertical-align: middle;
     cursor: pointer;
+    transition: height 200ms;
 }
 
 .lui-table-row:hover{
@@ -611,6 +612,15 @@ body .lui-emphasized{
 
 .lui-table-row:active{
     background-color: #ffa154;
+}
+
+.lui-table-row.collapse{
+    height: 0px;
+    transition: height 200ms;
+}
+
+.lui-table-row.collapse div{
+    
 }
 
 .lui-table-body .lui-table-row:first-of-type{
