@@ -1,10 +1,10 @@
 class LuiElement{
-    static __domMap__ = new Map();
-    __domElement__ = undefined;
-    __cssName__ = undefined;
+    static __domMap__ = new Map<HTMLElement, LuiElement>();
+    __domElement__ : HTMLElement = undefined;
+    __cssName__ : string = undefined;
     __eventListeners__ = [];
-    __children__ = new Set();
-    __parent__ = undefined;
+    __children__ : Set<LuiElement> = new Set<LuiElement>();
+    __parent__ : LuiElement = undefined;
 
     get domElement(){
         return this.__domElement__;
@@ -18,9 +18,7 @@ class LuiElement{
         return this.__children__;
     }
 
-    set parent(parent){
-        if(! parent instanceof LuiElement)
-            throw new Error('a LUI parent must be an instance of LuiElement');
+    set parent(parent : LuiElement){
         
         this.__parent__ = parent;
     }
@@ -29,7 +27,7 @@ class LuiElement{
         return this.__parent__;
     }
 
-    constructor(element, cssName = undefined){
+    constructor(element, cssName : string = undefined){
         if(isNodeOrElement(element))
             this.__domElement__ = element
         else if(typeof element === 'string')
@@ -37,7 +35,7 @@ class LuiElement{
         else
             throw new Error('Element must be a valid HTML Tag name');
         
-        if(cssName != undefined && cssName instanceof String)
+        if(cssName != undefined)
             this.__cssName__ = cssName;
 
         if(this.__cssName__ != undefined)
@@ -46,8 +44,7 @@ class LuiElement{
         LuiElement.__domMap__.set(this.__domElement__, this);
     }
 
-    on(eventname, handler){
-
+    on(eventname :string, handler : EventListener){
         this.__eventListeners__.push({
             selector: undefined,
             event: eventname,
@@ -63,9 +60,8 @@ class LuiElement{
         });        
     }
 
-    addChild(child){
-        if(!child instanceof LuiElement)
-            throw new Error('a LuiElement child must be a LuiElement!');
+    addChild(child : LuiElement){
+        
 
         if(this.__children__.has(child))
             return;
@@ -124,12 +120,12 @@ let isNodeOrElement = function(o){
 }
 
 let toggleContentShadow = function(on = true, zIndex = 900){
-    let contentShadow = document.getElementsByClassName('lui-content-shadowed')[0];
+    let contentShadow = <HTMLElement>document.querySelector('.lui-content-shadowed');
     if(on){
         contentShadow.classList.contains('active') ? 
             "" :
             contentShadow.classList.add('active');
-        contentShadow.style.zIndex = zIndex;
+        contentShadow.style.zIndex = zIndex.toString();
     }else{
         contentShadow.classList.remove('active');
     }
@@ -194,15 +190,17 @@ document.getElementsByClassName('lui-nav-bar-link-area')[0].addEventListener('cl
 
 
 document.getElementsByClassName('lui-nav-bar-link-area')[0].addEventListener('click', function(e){
-    if(e.target.nodeName == 'A')
-        Array.from(this.getElementsByTagName('a')).forEach(element => {
-                if(element != e.target){
-                    element.classList.remove('chosen');
-                    element.classList.add('nchosen');
-                }else{
-                    element.classList.remove('nchosen');
-                    element.classList.add('chosen');
-                }
+    let et = e.target as HTMLElement;
+    if(et.nodeName == 'A')
+        this.querySelector('a').array.forEach(element => {
+            if(element != et){
+                element.classList.remove('chosen');
+                element.classList.add('nchosen');
+            }
+            else{
+                element.classList.remove('nchosen');
+                element.classList.add('nchosen');
+            }
         });
 });
 
@@ -218,6 +216,11 @@ class LuiTable extends LuiElement{
     static get cssName(){
         return 'lui-table';
     }
+
+    __filter__ : LuiTableFilter = undefined;
+    __header__ : LuiTableHeader = undefined;
+    __columnFilters__ : LuiTableColumnFilters = undefined;
+
     constructor(element){
         super(element, LuiTable.cssName);
 
@@ -231,10 +234,10 @@ class LuiTable extends LuiElement{
     }
     
 
-    constructFromDom(element){
-        this.columnFilters = element.getElementsByClassName('lui-table-active-filters')[0];
-        this.TableHeader = element.getElementsByClassName('lui-table-header')[0];
-        this.FilterEntry = element.getElementsByClassName('lui-filter')[0];
+    constructFromDom(element : HTMLElement){
+        this.columnFilters = new LuiTableColumnFilters(this, element.querySelector('.lui-table-active-filters') as HTMLElement);
+        this.TableHeader = new LuiTableHeader(element.querySelector('.lui-table-header') as HTMLElement, null);
+        this.FilterEntry = new LuiTableFilter(element.querySelector('.lui-filter') as HTMLElement, this);
         
 
     }
@@ -244,16 +247,16 @@ class LuiTable extends LuiElement{
     }
     
     set FilterEntry(filter){
-        this.filter = new LuiTableFilter(filter, this);
+        this.__filter__ = filter;
         
     }
 
     set TableHeader(header){
-        this.header = new LuiTableHeader(header, function(){});
+        this.__header__ = header;
     }
 
     set columnFilters(filters){
-        this.__columnFilters__ = new LuiTableColumnFilters(this, filters);
+        this.__columnFilters__ = filters;
     }
 
     get columnFilters(){
@@ -261,7 +264,7 @@ class LuiTable extends LuiElement{
     }
 
     get TableHeader(){
-        return this.header;
+        return this.__header__;
     }
 
 }
@@ -269,7 +272,7 @@ class LuiTable extends LuiElement{
 class LuiEntry extends LuiElement{
     constructor(element = null, cssName = undefined){
         super(element, cssName);
-        super.domElement.type = 'text';
+        this.domElement.type = 'text';
     }
 
     set onInputChange(handler){
@@ -283,34 +286,45 @@ class LuiEntry extends LuiElement{
     set lostFocus(handler){
         super.on('focusout', handler);
     }
+
+    get domElement(){
+        return this.__domElement__ as HTMLInputElement;
+    }
+
+    set domElement(element : HTMLInputElement){
+        this.__domElement__ = element;
+    }
     
 }
 
 class LuiTableHeader{
+    __headerElements__ : NodeListOf<HTMLElement> = undefined;
+    headers : Array<string> = undefined;
+
     constructor(element, sortingFunc){
         if(element == undefined)
             throw new Error("A LuiTableHeader must be a DOM element or JSON object");
 
         if(isNodeOrElement(element)){
-            this.constructFromDom(element, sortingFunc);
+            this.constructFromDom(element);
         }else if(element.constructor === {}.constructor){
-            this.constructFromJson(element);
+            //this.constructFromJson(element);
         }else{
             throw new Error("A LuiTableHeader must be a DOM element or JSON object");
         }
     }
 
-    constructFromDom(element){
-        this._headerElements = element.getElementsByClassName('lui-col-header');
+    constructFromDom(element : HTMLElement){
+        this.__headerElements__ = element.querySelectorAll('.lui-col-header');
         this.headers = [];
-        for(var i = 0; i < this._headerElements.length; i++){
-            this.headers.push(this._headerElements[i].innerText);
+        for(var i = 0; i < this.__headerElements__.length; i++){
+            this.headers.push(this.__headerElements__[i].innerText);
         }
     }
 
-    setSortingFunc(sortingFunc){
-        for(var i = 0; i < this._headerElements.length; i++){
-            this._headerElements[i].addEventListener('click', sortingFunc(e, i));
+    setSortingFunc(sortingFunc : EventListenerObject){
+        for(var i = 0; i < this.__headerElements__.length; i++){
+            this.__headerElements__[i].addEventListener('click', sortingFunc);
         }
     }
 }
@@ -318,14 +332,14 @@ class LuiTableHeader{
 class LuiTableFilterSuggestion extends LuiElement{
 
     __cssMarked__ = 'marked';
-    __marked__ = false;
+    __marked__ : boolean = false;
 
     constructor(contents){
         super('li', undefined);
-        super.domElement.innerText = contents;
+        this.domElement.innerText = contents;
     }
 
-    set marked(bool){
+    set marked(bool : boolean){
         this.__marked__ = bool;
         if(this.__marked__)
             this.domElement.classList.add(this.__cssMarked__);
@@ -334,7 +348,7 @@ class LuiTableFilterSuggestion extends LuiElement{
     }
 
     get marked(){
-        return this.__cssMarked__;
+        return this.__marked__;
     }
 
 }
@@ -351,8 +365,8 @@ class LuiTableFilterSuggestions extends LuiElement{
             'lui-table-filter-suggestions'
         );
 
-        if(!super.domElement.classList.contains(this.cssInactive))
-            super.domElement.classList.add(this.cssInactive);
+        if(!this.domElement.classList.contains(this.cssInactive))
+            this.domElement.classList.add(this.cssInactive);
         
         this.filterOptions = filterOptions;
     }
@@ -360,9 +374,9 @@ class LuiTableFilterSuggestions extends LuiElement{
     set state(active){
 
         if(active != this.__state__ && active)
-            super.domElement.classList.remove(this.cssInactive);
+            this.domElement.classList.remove(this.cssInactive);
         else
-            super.domElement.classList.add(this.cssInactive);
+            this.domElement.classList.add(this.cssInactive);
 
         this.__state__ = active;
     }
@@ -371,11 +385,11 @@ class LuiTableFilterSuggestions extends LuiElement{
         return this.__state__;
     }
 
-    set filterOptions(filters = []){
+    set filterOptions(filters : Array<string>){
         let suggestions = this;
         this.__options__ = [];
         super.clearChildren();
-        super.domElement.innerHTML = '';
+        this.domElement.innerHTML = '';
         filters.forEach(function(item, index){
             suggestions.addChild(
                 new LuiTableFilterSuggestion(item)
@@ -413,8 +427,13 @@ class LuiTableFilterSuggestions extends LuiElement{
 
     showAll(){
         for(var i = 0; i < this.domElement.children.length; i++){
-            this.domElement.children[i].style.display = '';
+            let child = this.domElement.children[i] as HTMLElement;
+            child.style.display = '';
         }
+    }
+
+    get children(){
+        return this.__children__ as Set<LuiTableFilterSuggestion>;
     }
 
 }
@@ -434,11 +453,11 @@ class LuiTableColumnFilter extends LuiElement{
 
 class LuiTableColumnFilters extends LuiElement{
 
-    constructor(parentTable, element = 'div'){
+    constructor(parentTable, element : string | HTMLElement = 'div'){
             super(element, 'lui-table-active-filters');
             this.parent = parentTable;
             this.on('click', (e) => {
-                let element = LuiElement.__domMap__.get(e.target);
+                let element = LuiElement.__domMap__.get(e.target as HTMLElement);
                 if(element != this)
                     element.remove();
             });
@@ -453,18 +472,30 @@ class LuiTableColumnFilters extends LuiElement{
         );
     }
 
+    set parent(parent : LuiTable){
+        this.__parent__ = parent;
+    }
+
+    get parent(){
+        return this.__parent__ as LuiTable;
+    }
+
 }
 
 class LuiTableFilter extends LuiElement{
 
-    constructor(element, parentTable){
+    table : LuiTable = undefined;
+    __entry__ : LuiEntry = undefined;
+    __button__ : LuiElement = undefined;
+    __suggestions__ : LuiTableFilterSuggestions = undefined;
+
+
+
+    constructor(element, parentTable : LuiTable){
         super(
             isNodeOrElement(element) ? element : 'div', 
             'lui-filter'
         );
-
-        if(parentTable == null || ! parentTable instanceof LuiTable)
-            throw new Error('parentTable must be a LuiTable class instance')
 
         this.table = parentTable;
 
@@ -476,50 +507,50 @@ class LuiTableFilter extends LuiElement{
     }
 
     constructFromDom(element){
-        this.entry = new LuiEntry(element.getElementsByTagName('input')[0]);
-        this.button = new LuiElement(element.getElementsByTagName('div')[0]);
-        this.suggestions = new LuiTableFilterSuggestions(element.getElementsByTagName('ul')[0]);
-        this.entry.onInputChange = (e) => {
+        this.__entry__ = new LuiEntry(element.querySelector('input'));
+        this.__button__ = new LuiElement(element.querySelector('div'));
+        this.__suggestions__ = new LuiTableFilterSuggestions(element.querySelector('ul'));
+        this.__entry__.onInputChange = (e) => {
             //check if key is direction up, down or enter
             switch(e.code)
             {
                 case 'ArrowUp':
-                    this.suggestions.markedIndex = this.suggestions.markedIndex - 1;
+                    this.__suggestions__.markedIndex = this.__suggestions__.markedIndex - 1;
                 break;
                 case 'ArrowDown':
-                    this.suggestions.markedIndex = this.suggestions.markedIndex + 1;
+                    this.__suggestions__.markedIndex = this.__suggestions__.markedIndex + 1;
                 break;
                 case 'Enter':
                     if(e.target.value == '')
                         return;
                     else
                         this.table.columnFilters.add(
-                            this.suggestions.markedIndex,
+                            this.__suggestions__.markedIndex,
                             e.target.value
                         );
                         e.target.value = 0;
-                        this.suggestions.clearMarking();
+                        this.__suggestions__.clearMarking();
                         //apply filter
                 break;
                 default:
-                    this.suggestions.filter = e.target.value;
+                    //this.__suggestions__.filter = e.target.value;
             }
         };
-        this.entry.getsFocus = (e) => {
-            this.suggestions.state = true;
+        this.__entry__.getsFocus = (e) => {
+            this.__suggestions__.state = true;
         };
-        this.entry.lostFocus = (e) => {
-            this.suggestions.state = false;
-            this.suggestions.clearMarking();
+        this.__entry__.lostFocus = (e) => {
+            this.__suggestions__.state = false;
+            this.__suggestions__.clearMarking();
         };
-        this.suggestions.filterOptions = this.table.TableHeader.headers;
+        this.__suggestions__.filterOptions = this.table.TableHeader.headers;
     }
 
 }
 
 class LuiTableColumn{
     __width__ = 5;
-    __cells__ = new Set();
+    __cells__ = new Set<LuiTableRowCell>();
 
     constructor(dataType){
         switch(dataType)
@@ -545,17 +576,13 @@ class LuiTableColumn{
         return this.__width__;
     }
 
-    addCell(cell){
-        if(!cell instanceof LuiTableRowCell)
-            throw new Error('Must be a LuiTableRowCell');
+    addCell(cell : LuiTableRowCell){
         
         this.__cells__.add(cell);
         cell.width = this.width;
     }
 
-    removeCell(cell){
-        if(!cell instanceof LuiTableRowCell)
-            throw new Error('Must be a LuiTableRowCell');
+    removeCell(cell : LuiTableRowCell){
         this.__cells__.delete(cell);
     }
 
@@ -570,7 +597,10 @@ class LuiTableRowCell extends LuiElement{
     }
 
     set width(integer){
-        this.domElement.classList = `${this.__cssName__}${integer}`;
+        this.domElement.classList.forEach((c) => {
+            this.domElement.classList.remove(c);
+        });
+        this.domElement.classList.add(`${this.__cssName__}${integer}`);
     }
 
     constructor(column, row, element){
