@@ -597,6 +597,17 @@ class LuiTableRow extends LuiElement{
         parent = parentTable;
     }
 
+    set collapsed(col){
+        if(this.__collapsed__ == col)
+            return;
+
+        this.__collapsed__ = col;
+        if(this.__collapsed__)
+            this.collapse();
+        else
+            this.unfold();
+    }
+
     collapse(){
         if(!this.__collapsed__){
             this.on('transitioned', () => {
@@ -610,8 +621,10 @@ class LuiTableRow extends LuiElement{
     unfold(){
         if(this.__collapsed__){
             this.on('transitioned', () => {
-                this.domElement.style.display = 
-            })
+                this.domElement.style.display = '';
+                this.domElement.classList.remove('collapse');
+            });
+            this.domElement.classList.add('collapse');
         }
     }
 

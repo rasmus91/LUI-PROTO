@@ -620,7 +620,8 @@ body .lui-emphasized{
 }
 
 .lui-table-row.collapse div{
-    
+    height: 0px;
+    transition: height 200ms;
 }
 
 .lui-table-body .lui-table-row:first-of-type{
