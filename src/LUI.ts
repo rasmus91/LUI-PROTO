@@ -15,7 +15,7 @@ class LuiElement{
     }
 
     get children(){
-        return this.__children__;
+        return this.__children__ as Set<LuiTableRowCell>;
     }
 
     set parent(parent : LuiElement){
@@ -52,6 +52,16 @@ class LuiElement{
         });
 
         this.__domElement__.addEventListener(eventname, handler);
+    }
+
+    clearEventListenersFor(eventname : string){
+        this.__eventListeners__.forEach(e => {
+            if(eventname === e.event)
+                this.__domElement__.removeEventListener(
+                    e.event,
+                    e.handler
+                );
+        });
     }
 
     clearEventHandlers(){
@@ -220,6 +230,7 @@ class LuiTable extends LuiElement{
     __filter__ : LuiTableFilter = undefined;
     __header__ : LuiTableHeader = undefined;
     __columnFilters__ : LuiTableColumnFilters = undefined;
+    __body__ : LuiTableBody = undefined;
 
     constructor(element){
         super(element, LuiTable.cssName);
@@ -238,7 +249,7 @@ class LuiTable extends LuiElement{
         this.columnFilters = new LuiTableColumnFilters(this, element.querySelector('.lui-table-active-filters') as HTMLElement);
         this.TableHeader = new LuiTableHeader(element.querySelector('.lui-table-header') as HTMLElement, null);
         this.FilterEntry = new LuiTableFilter(element.querySelector('.lui-filter') as HTMLElement, this);
-        
+        this.__body__ = new LuiTableBody(element.querySelector('.lui-table-body') as HTMLElement, this);
 
     }
 
@@ -265,6 +276,10 @@ class LuiTable extends LuiElement{
 
     get TableHeader(){
         return this.__header__;
+    }
+
+    get rows() {
+        return this.__body__.children;
     }
 
 }
@@ -440,7 +455,7 @@ class LuiTableFilterSuggestions extends LuiElement{
 
 class LuiTableColumnFilter extends LuiElement{
     __header__ = '';
-    __filter__ = '';
+    __filter__ : string = '';
 
     constructor(header, filter){
         super('div');
@@ -449,27 +464,60 @@ class LuiTableColumnFilter extends LuiElement{
 
         this.domElement.innerText = `${this.__header__}:${this.__filter__}`;
     }
+
+    public get filter() {
+        return this.__filter__;
+    }
 }
 
 class LuiTableColumnFilters extends LuiElement{
+
+    __filterMap__ : Map<number, LuiTableColumnFilter> = new Map<number, LuiTableColumnFilter>();
 
     constructor(parentTable, element : string | HTMLElement = 'div'){
             super(element, 'lui-table-active-filters');
             this.parent = parentTable;
             this.on('click', (e) => {
                 let element = LuiElement.__domMap__.get(e.target as HTMLElement);
-                if(element != this)
-                    element.remove();
+
+                if(element == this)
+                    return;
+
+                this.__filterMap__.forEach((v, k) =>{
+                    if(v == element){
+                        this.__filterMap__.delete(k);
+                        this.parent.rows.forEach(r => {
+                            Array.from<LuiTableRowCell>(r.children)[0].filtered = false;
+                        })
+                    }
+                        
+                        
+                });
+
+                element.remove();
             });
     }
 
-    add(index, filter){
-        this.addChild(
-            new LuiTableColumnFilter(
-                this.parent.TableHeader.headers[index],
-                filter
-            )
+    add(index : number, filter : string){
+        let newFilter = new LuiTableColumnFilter(
+            this.parent.TableHeader.headers[index],
+            filter
         );
+
+        this.__filterMap__.set(index, newFilter);
+        this.addChild(
+            newFilter
+        );
+
+        this.parent.rows.forEach(r => {
+            let cIndex = 0;
+            r.children.forEach(c => {
+                if(cIndex == index)
+                    c.tryApplyFilter(newFilter.filter)
+                else
+                    cIndex++;
+            });
+        });
     }
 
     set parent(parent : LuiTable){
@@ -478,6 +526,10 @@ class LuiTableColumnFilters extends LuiElement{
 
     get parent(){
         return this.__parent__ as LuiTable;
+    }
+
+    addChild(child : LuiTableColumnFilter){
+        super.addChild(child);
     }
 
 }
@@ -591,6 +643,7 @@ class LuiTableColumn{
 class LuiTableRowCell extends LuiElement{
     __column__ = undefined;
     __cssName__ = 'lui-table-col-';
+    private __filtered__ : boolean = false;
 
     get column(){
         return this.__column__;
@@ -614,6 +667,44 @@ class LuiTableRowCell extends LuiElement{
     remove(){
         this.column.removeCell(this);
         super.remove();
+    }
+
+    tryApplyFilter(filter) : boolean{
+        let lowCase = this.domElement.innerText.toLowerCase();
+        let upCase = this.domElement.innerText.toUpperCase();
+        let rex = new RegExp(filter);
+        if(! (rex.test(lowCase) || rex.test(upCase)))
+            return false;
+        
+        return this.filtered = true;
+    }
+
+    public get filtered(){
+        return this.__filtered__;
+    }
+
+    public set filtered(on){
+        let causeChange = on != this.__filtered__;
+        this.__filtered__ = on;
+
+        if(causeChange)
+            this.filterChange();
+    }
+
+    public get parent(){
+        return this.__parent__ as LuiTableRow;
+    }
+
+    public set parent(parent : LuiTableRow){
+        this.__parent__ = parent;
+    }
+
+    filterChange(){
+        let arr : Array<LuiTableRowCell> = Array.from(this.parent.children);
+        if(arr.filter((c, i, arr) => c.filtered).length == 0)
+            this.parent.unfold();
+        else
+            this.parent.collapse();
     }
 }
 
@@ -643,6 +734,7 @@ class LuiTableRow extends LuiElement{
             this.on('transitioned', () => {
                 this.domElement.style.display = 'none';
                 this.domElement.classList.remove('collapse');
+                this.clearEventListenersFor('transitioned');
             });
             this.domElement.classList.add('collapse');
         }
@@ -653,11 +745,41 @@ class LuiTableRow extends LuiElement{
             this.on('transitioned', () => {
                 this.domElement.style.display = '';
                 this.domElement.classList.remove('collapse');
+                this.clearEventListenersFor('transitioned');
             });
             this.domElement.classList.add('collapse');
         }
     }
 
+}
+
+class LuiTableBody extends LuiElement{
+
+    constructor(element : HTMLElement, parentTable : LuiTable){
+        let css = 'lui-table-body';
+        if(element == undefined || element == null)
+            super('div', css);
+        else
+            super(element, css);
+        
+        this.domElement.querySelectorAll('.lui-table-row').forEach((r) => {
+            this.__children__.add(
+                new LuiTableRow(r, parentTable)
+            );
+        });
+    }
+
+    get children(){
+        return this.__children__ as Set<LuiTableRow>;
+    }
+
+    get parent(){
+        return this.__parent__ as LuiTable;
+    }
+
+    set parent(parent : LuiTable){
+        this.__parent__ = parent;
+    }
 }
 
 
