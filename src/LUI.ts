@@ -1,3 +1,11 @@
+namespace LUI{
+
+    export const cssClasses = {
+        hidden: 'lui-hidden'
+    };
+
+}
+
 class LuiElement{
     static __domMap__ = new Map<HTMLElement, LuiElement>();
     __domElement__ : HTMLElement = undefined;
@@ -27,8 +35,8 @@ class LuiElement{
         return this.__parent__;
     }
 
-    constructor(element, cssName : string = undefined){
-        if(isNodeOrElement(element))
+    constructor(element : string | HTMLElement, cssName : string = undefined){
+        if(element instanceof HTMLElement)
             this.__domElement__ = element
         else if(typeof element === 'string')
             this.__domElement__ = document.createElement(element);
@@ -487,8 +495,8 @@ class LuiTableColumnFilters extends LuiElement{
                     if(v == element){
                         this.__filterMap__.delete(k);
                         this.parent.rows.forEach(r => {
-                            Array.from<LuiTableRowCell>(r.children)[0].filtered = false;
-                        })
+                            Array.from<LuiTableRowCell>(r.children)[k].filtered = false;
+                        });
                     }
                         
                         
@@ -514,8 +522,8 @@ class LuiTableColumnFilters extends LuiElement{
             r.children.forEach(c => {
                 if(cIndex == index)
                     c.tryApplyFilter(newFilter.filter)
-                else
-                    cIndex++;
+                
+                cIndex++;
             });
         });
     }
@@ -656,12 +664,12 @@ class LuiTableRowCell extends LuiElement{
         this.domElement.classList.add(`${this.__cssName__}${integer}`);
     }
 
-    constructor(column, row, element){
+    constructor(row : LuiTableRow, element){
         super(element); //TODO: add class based on column width
 
         this.parent = row;
-        this.__column__ = column;
-        column.addCell(this);
+        //this.__column__ = column;
+        //column.addCell(this);
     }
 
     remove(){
@@ -673,7 +681,7 @@ class LuiTableRowCell extends LuiElement{
         let lowCase = this.domElement.innerText.toLowerCase();
         let upCase = this.domElement.innerText.toUpperCase();
         let rex = new RegExp(filter);
-        if(! (rex.test(lowCase) || rex.test(upCase)))
+        if(rex.test(this.domElement.innerText))//(rex.test(lowCase) || rex.test(upCase)))
             return false;
         
         return this.filtered = true;
@@ -697,6 +705,7 @@ class LuiTableRowCell extends LuiElement{
 
     public set parent(parent : LuiTableRow){
         this.__parent__ = parent;
+        this.__parent__.addChild(this);
     }
 
     filterChange(){
@@ -712,10 +721,19 @@ class LuiTableRow extends LuiElement{
 
     __collapsed__ = false;
 
-    constructor(element, parentTable){
+    constructor(element, parentBody : LuiTableBody){
         super(element, 'lui-table-row');
 
-        parent = parentTable;
+        this.parent = parentBody;
+
+        if(element instanceof HTMLElement)
+            this.constructFromDom();
+    }
+
+    private constructFromDom() : void{
+        this.domElement.querySelectorAll('div').forEach(d => {
+            new LuiTableRowCell(this, d);
+        });
     }
 
     set collapsed(col){
@@ -731,24 +749,40 @@ class LuiTableRow extends LuiElement{
 
     collapse(){
         if(!this.__collapsed__){
-            this.on('transitioned', () => {
-                this.domElement.style.display = 'none';
+            this.on('transitionend', () => {
+                this.domElement.classList.add(LUI.cssClasses.hidden)
                 this.domElement.classList.remove('collapse');
-                this.clearEventListenersFor('transitioned');
+                this.clearEventListenersFor('transitionend');
             });
             this.domElement.classList.add('collapse');
+            this.__collapsed__ = true;
         }
     }
 
     unfold(){
         if(this.__collapsed__){
-            this.on('transitioned', () => {
-                this.domElement.style.display = '';
+            this.on('transitionend', () => {
                 this.domElement.classList.remove('collapse');
-                this.clearEventListenersFor('transitioned');
+                this.clearEventListenersFor('transitionend');
             });
             this.domElement.classList.add('collapse');
+            this.domElement.classList.remove(LUI.cssClasses.hidden);
+            this.domElement.classList.remove('collapse');
+            
+            this.__collapsed__ = false;
         }
+    }
+
+    addChild(child : LuiTableRowCell){
+        super.addChild(child);
+    }
+
+    public set parent(parent : LuiTableBody){
+        this.__parent__ = parent;
+    }
+
+    public get parent(){
+        return this.__parent__ as LuiTableBody;
     }
 
 }
@@ -762,9 +796,11 @@ class LuiTableBody extends LuiElement{
         else
             super(element, css);
         
+        this.parent = parentTable;
+
         this.domElement.querySelectorAll('.lui-table-row').forEach((r) => {
             this.__children__.add(
-                new LuiTableRow(r, parentTable)
+                new LuiTableRow(r, this)
             );
         });
     }

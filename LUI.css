@@ -29,6 +29,10 @@
     display: table;
   }
 
+.lui-hidden{
+    display: none;
+}
+
 @media only screen and (max-width: 768px) {
     /* For mobile phones: */
     [class*="lui-col-"] {
@@ -605,6 +609,10 @@ body .lui-emphasized{
     transition: height 200ms;
 }
 
+.lui-table-row div{
+    transition: height 200ms;
+}
+
 .lui-table-row:hover{
     background-color: #ffc27d;
     transition: 150ms;
@@ -702,6 +710,7 @@ div.lui-table-active-filters{
     display: flex;
     flex-flow: row;
     justify-content: center;
+    min-height: 14px;
 }
 
 div.lui-table-active-filters div{
