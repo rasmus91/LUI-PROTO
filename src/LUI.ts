@@ -1,39 +1,250 @@
 namespace LUI{
 
-    export const cssClasses = {
-        hidden: 'lui-hidden'
+    export enum cssClasses {
+        hidden = 'lui-hidden'
     };
+
+    export enum sortingOrder {
+        none = 0,
+        descending = 1,
+        ascending = 2
+    }
+
+    export enum sortingType {
+        TEXT = 0,
+        DATE = 1,
+        NUMBER = 2
+    }
+
+    export const sortAsText = (a : string, b : string) : number => {
+        return a.localeCompare(b);
+    };
+
+    export const sortAsNumber = (a : number, b : number) : number => {
+        return a - b;
+    }
+
+    export const sortAsDate = (a : Date, b : Date) : number => {
+        if(a > b){
+            return 1;
+        }
+        else if ( b > a){
+            return -1;
+        }
+        
+        return 0;
+    }
+
+    export interface IOrderedSet<T> extends Set<T>{
+
+        add(element) : any;
+        remove(element : T) : number;
+        has(element : T) : boolean;
+        elementAt(index : number) : T;
+        insert(index : number, element : T);
+        //filter<S extends T>(callbackfn: (value: T, index: number, IOrderedSet: IOrderedSet<T>) => value is S, thisArg?: any): IOrderedSet<S>;
+        filter(callbackfn: (value: T, index: number, iOrderedSet : IOrderedSet<T>) => unknown, thisArg? : any): IOrderedSet<T>;
+
+    }
+
+    export class OrderedSet<T> implements IOrderedSet<T>{
+        
+        public static from<S>(arr : Array<S>) : OrderedSet<S>{
+            let result = new OrderedSet<S>();
+            result.__data__ = arr; 
+            return result;
+        }
+        
+        private __data__ : Array<T> = new Array<T>();
+        private __iteratingCurrent__: any;
+
+        insert(index : number, element : T) : boolean{
+            if(this.size <= index)
+                return false;
+
+            if(this.__data__.indexOf(element))
+                return false;
+        
+            this.__data__.splice(index, 0, element);
+            return true;
+        }
+
+        add(element: T) : number{
+            let existingIndex = this.__data__.indexOf(element);
+            if(existingIndex > -1)
+                return -1;
+            this.__data__.push(element);
+            return this.size - 1;
+        }
+        remove(element: T): number {
+            let index = this.__data__.indexOf(element);
+
+            if(index > -1)
+                this.__data__.splice(index, 1);
+
+            return index;
+        }
+        has(element: T): boolean {
+            return this.__data__.indexOf(element) > -1;
+        }
+        clear(): void {
+            this.__data__ = new Array<T>();
+        }
+        delete(value: T): boolean {
+            return this.remove(value) > -1;
+        }
+
+        elementAt(index : number) : T{
+            if(index > this.size || index < 0)
+                throw new Error(`The index specified must be within the values of 0 and size ${this.size}`);
+            
+            return this.__data__[index];
+        }
+
+        filter(callbackfn: (value: T, index: number, iOrderedSet : IOrderedSet<T>) => unknown, thisArg?: any): IOrderedSet<T>{
+            let filtered = new Array<T>();
+            let filteredSet = new OrderedSet<T>();
+
+            filteredSet.__data__ = filtered;
+            for(let i = 0; i < this.size; i++){
+                if(callbackfn(this.elementAt(i), i, this))
+                    filtered.push(this.elementAt(i));
+            }
+            
+            return filteredSet;
+        }
+
+        /*filter<S extends T>(callbackfn: (value: T, index: number, IOrderedSet: IOrderedSet<T>) => value is S, thisArg?: any): IOrderedSet<S> {
+            let filtered = new Array<S>();
+            let filteredSet = new OrderedSet<S>();
+            filteredSet.__data__ = filtered;
+            for(let i = 0; i < this.size; i++){
+                if(callbackfn(this.elementAt(i), i, this))
+                    filtered.push(this.elementAt(i) as S);
+            }
+            
+            return filteredSet;
+        }/*/
+
+        forEach(callbackfn: (value: T, value2: T, set: IOrderedSet<T>) => void, thisArg?: any): void {
+            for(let i = 0; i < this.size; i++){
+                callbackfn(
+                    this.elementAt(i),
+                    this.elementAt(i),
+                    this
+                );
+            }
+        }
+
+        public get size(){
+            return this.__data__.length;
+        }
+
+        [Symbol.iterator](): IterableIterator<T> {
+            return this;
+        }
+        
+        keys(): IterableIterator<T> {
+            return this;
+        }
+        values(): IterableIterator<T> {
+            return this;
+        }
+        entries(): IterableIterator<[T, T]> {
+            throw new Error("Method not implemented.");
+        }
+        [Symbol.toStringTag]: string;
+
+        next(){
+            if(this.__iteratingCurrent__ < this.size)
+                return {
+                    value: this.elementAt(this.__iteratingCurrent__++),
+                    done: false
+                };
+            
+            this.__iteratingCurrent__ = 0;
+            return {
+                value: undefined,
+                done: true
+            };
+
+        }
+
+        
+
+    }
+
+    export class ElementChildren<T extends ILuiElement> extends OrderedSet<T>{
+        private __element__: HTMLElement;
+        private __parent__ : ILuiElement;
+
+        constructor(element : ILuiElement){
+            super();
+            this.__element__ = element.domElement;
+            this.__parent__ = element;
+        }
+
+        add(child : T) : number{
+            let index = super.add(child);
+
+            if(!this.__element__.contains(child.domElement) && index > -1)
+                this.__element__.appendChild(child.domElement);
+
+            if(child.parent != this.__parent__)
+                child.parent = this.__parent__;
+            
+            return index;
+        }
+
+        remove(child : T) : number{
+            let index = super.remove(child);
+
+            if(index < 0)
+                return index;
+               
+            child.domElement.remove();
+            delete child.parent;
+
+            return index;
+        }
+
+        insert(index : number, child : T) : boolean{
+            let result = super.insert(index, child);
+            if(result)
+                this.__element__.insertBefore(
+                    child.domElement,
+                    this.__element__.children[index + 1]
+                );
+
+            return result;
+        }
+
+        clear() : void{
+            this.forEach(c => c.remove());
+            super.clear();
+        }
+
+    }
+
 
 }
 
-class LuiElement{
-    static __domMap__ = new Map<HTMLElement, LuiElement>();
-    __domElement__ : HTMLElement = undefined;
-    __cssName__ : string = undefined;
-    __eventListeners__ = [];
-    __children__ : Set<LuiElement> = new Set<LuiElement>();
-    __parent__ : LuiElement = undefined;
+interface ILuiElement{
+    domElement : HTMLElement;
+    cssName : string;
+    children : LUI.ElementChildren<ILuiElement>;
+    remove();
+    parent : ILuiElement;
+}
 
-    get domElement(){
-        return this.__domElement__;
-    }
+class LuiElement<Tparent extends ILuiElement> implements ILuiElement{
+    static __domMap__ = new Map<HTMLElement, ILuiElement>();
 
-    get cssName(){
-        return this.__cssName__;
-    }
-
-    get children(){
-        return this.__children__ as Set<LuiTableRowCell>;
-    }
-
-    set parent(parent : LuiElement){
-        
-        this.__parent__ = parent;
-    }
-
-    get parent(){
-        return this.__parent__;
-    }
+    private __eventListeners__ = [];
+    private __parent__ : Tparent;
+    private __domElement__ : HTMLElement; 
+    private __cssName__ : string;
+    protected __children__ : LUI.ElementChildren<ILuiElement> = undefined;
 
     constructor(element : string | HTMLElement, cssName : string = undefined){
         if(element instanceof HTMLElement)
@@ -49,7 +260,43 @@ class LuiElement{
         if(this.__cssName__ != undefined)
             this.__domElement__.classList.add(cssName);
 
+        this.__children__ = new LUI.ElementChildren<ILuiElement>(this);
+
         LuiElement.__domMap__.set(this.__domElement__, this);
+    }
+
+    public get parent(){
+        return this.__parent__;
+    }
+
+    public set parent(element : Tparent){
+        this.__parent__ = element;
+        if(this.__parent__ != null)
+            this.__parent__.children.add(this);
+    }
+
+    public get children(){
+        return this.__children__;
+    }
+
+    public get cssName(){
+        return this.__cssName__;
+    }
+
+    public get domElement(){
+        return this.__domElement__;
+    }
+
+    public remove(){
+        
+        this.children.clear();
+
+        if(this.parent != null || this.parent != undefined)
+            this.parent.children.delete(this);
+        
+        LuiParentElement.__domMap__.delete(this.domElement);
+
+        this.domElement.remove();
     }
 
     on(eventname :string, handler : EventListener){
@@ -78,38 +325,44 @@ class LuiElement{
         });        
     }
 
-    addChild(child : LuiElement){
+}
+
+class LuiParentElement<Tparent extends ILuiElement, Tchild extends ILuiElement> extends LuiElement<Tparent>{
+
+    protected __children__ : LUI.ElementChildren<Tchild>;
+
+    get children(){
+        return this.__children__ as LUI.ElementChildren<Tchild>;
+    }
+
+
+    constructor(element : string | HTMLElement, cssName : string = undefined){
+        super(element, cssName);
+    
+        this.__children__ = new LUI.ElementChildren<Tchild>(this);
+    }
+
+    
+
+    addChild(child : Tchild, index : number = undefined){
         
+        if(child.parent == undefined)
+            child.parent = this;
+        else if(child.parent != this)
+            
 
         if(this.__children__.has(child))
             return;
         
         this.__children__.add(child);
         child.parent = this;
-        this.__domElement__.appendChild(child.domElement);
+        super.domElement.appendChild(child.domElement);
     }
 
     clearChildren(){
-        this.__children__.forEach((e) => {
+        this.children.forEach((e) => {
             e.remove();
         });
-    }
-
-    remove(extraHandling = undefined){
-        if(this.children.size)
-            this.children.forEach((e) => {
-                e.remove();
-            });
-
-        if(parent instanceof LuiElement)
-            parent.children.delete(this);
-        
-        LuiElement.__domMap__.delete(this.domElement);
-
-        this.domElement.remove();
-
-        if(isFunction(extraHandling))
-            extraHandling(this);
     }
 }
 
@@ -230,7 +483,7 @@ document.addEventListener("keyup", function(e){
 });
 
 // Table Logic
-class LuiTable extends LuiElement{
+class LuiTable extends LuiParentElement<ILuiElement, ILuiElement>{
     static get cssName(){
         return 'lui-table';
     }
@@ -243,7 +496,7 @@ class LuiTable extends LuiElement{
     constructor(element){
         super(element, LuiTable.cssName);
 
-        if(isNodeOrElement(element)){
+        if(element instanceof HTMLElement){
             this.constructFromDom(element);
         }else if(element.constructor === {}.constructor){
             this.constructFromJson(element);
@@ -255,7 +508,7 @@ class LuiTable extends LuiElement{
 
     constructFromDom(element : HTMLElement){
         this.columnFilters = new LuiTableColumnFilters(this, element.querySelector('.lui-table-active-filters') as HTMLElement);
-        this.TableHeader = new LuiTableHeader(element.querySelector('.lui-table-header') as HTMLElement, null);
+        this.TableHeader = new LuiTableHeader(element.querySelector('.lui-table-header') as HTMLElement, this);
         this.FilterEntry = new LuiTableFilter(element.querySelector('.lui-filter') as HTMLElement, this);
         this.__body__ = new LuiTableBody(element.querySelector('.lui-table-body') as HTMLElement, this);
 
@@ -292,10 +545,12 @@ class LuiTable extends LuiElement{
 
 }
 
-class LuiEntry extends LuiElement{
+class LuiEntry extends LuiElement<ILuiElement>{
     constructor(element = null, cssName = undefined){
         super(element, cssName);
         this.domElement.type = 'text';
+
+        
     }
 
     set onInputChange(handler){
@@ -311,30 +566,79 @@ class LuiEntry extends LuiElement{
     }
 
     get domElement(){
-        return this.__domElement__ as HTMLInputElement;
-    }
-
-    set domElement(element : HTMLInputElement){
-        this.__domElement__ = element;
+        return super.domElement as HTMLInputElement;
     }
     
 }
 
-class LuiTableHeader{
+class LuiTableHead extends LuiElement<LuiTableHeader>{
+    private __sorting__ : LUI.sortingOrder = LUI.sortingOrder.none;
+
+    constructor(element : HTMLElement | string, parent : LuiTableHeader){
+        super(element);
+        this.parent = parent;
+
+        this.on('click', (e) => {
+            switch(this.sorting){
+                case LUI.sortingOrder.descending:
+                    this.sorting = LUI.sortingOrder.ascending;
+                    break;
+                default:
+                    this.sorting = LUI.sortingOrder.descending;
+                    
+            }
+        });
+    }
+
+    public get parent(){
+        return super.parent as LuiTableHeader;
+    }
+
+    public set parent(parent : LuiTableHeader){
+        super.parent = parent;
+    }
+
+    public set sorting(order : LUI.sortingOrder | number){
+        switch(order){
+            case 1:
+                order = LUI.sortingOrder.descending;
+                this.domElement.classList.remove('sort-asc');
+                this.domElement.classList.add('sort-desc');
+                this.parent.sortedColumn = this;
+                break;
+            case 2:
+                order = LUI.sortingOrder.ascending;
+                this.domElement.classList.remove('sort-desc');
+                this.domElement.classList.add('sort-asc');
+                this.parent.sortedColumn = this;
+                break;
+            default:
+                order = LUI.sortingOrder.none;
+                this.domElement.classList.remove('sort-desc');
+                this.domElement.classList.remove('sort-asc');
+        }
+        this.__sorting__ = order;
+    }
+
+    public get sorting(){
+        return this.__sorting__;
+    }
+
+}
+
+class LuiTableHeader extends LuiParentElement<LuiTable, LuiTableHead>{
     __headerElements__ : NodeListOf<HTMLElement> = undefined;
     headers : Array<string> = undefined;
 
-    constructor(element, sortingFunc){
-        if(element == undefined)
-            throw new Error("A LuiTableHeader must be a DOM element or JSON object");
 
-        if(isNodeOrElement(element)){
+    constructor(element : HTMLElement | string, parentTable : LuiTable){
+        super(element);
+        this.parent = parentTable;
+
+        if(element instanceof HTMLElement)
             this.constructFromDom(element);
-        }else if(element.constructor === {}.constructor){
-            //this.constructFromJson(element);
-        }else{
-            throw new Error("A LuiTableHeader must be a DOM element or JSON object");
-        }
+
+        
     }
 
     constructFromDom(element : HTMLElement){
@@ -343,16 +647,29 @@ class LuiTableHeader{
         for(var i = 0; i < this.__headerElements__.length; i++){
             this.headers.push(this.__headerElements__[i].innerText);
         }
+        this.domElement.querySelectorAll('.lui-col-header').forEach(e => {
+            this.children.add(
+                new LuiTableHead(e as HTMLElement, this)
+            );
+        });
     }
 
-    setSortingFunc(sortingFunc : EventListenerObject){
-        for(var i = 0; i < this.__headerElements__.length; i++){
-            this.__headerElements__[i].addEventListener('click', sortingFunc);
-        }
+    public set sortedColumn(header : LuiTableHead){
+        this.children.forEach(e => {
+            if(e === header)
+                return;
+
+            e.sorting = LUI.sortingOrder.none;
+        });
     }
+
+    public get children(){
+        return super.children;
+    }
+    
 }
 
-class LuiTableFilterSuggestion extends LuiElement{
+class LuiTableFilterSuggestion extends LuiElement<LuiTable>{
 
     __cssMarked__ = 'marked';
     __marked__ : boolean = false;
@@ -376,7 +693,7 @@ class LuiTableFilterSuggestion extends LuiElement{
 
 }
 
-class LuiTableFilterSuggestions extends LuiElement{
+class LuiTableFilterSuggestions extends LuiParentElement<LuiTableFilter, LuiTableFilterSuggestion>{
     cssInactive = 'inactive';
     __state__ = false;
     __options__ = [];
@@ -388,8 +705,10 @@ class LuiTableFilterSuggestions extends LuiElement{
             'lui-table-filter-suggestions'
         );
 
-        if(!this.domElement.classList.contains(this.cssInactive))
-            this.domElement.classList.add(this.cssInactive);
+        
+
+        if(!super.domElement.classList.contains(this.cssInactive))
+            super.domElement.classList.add(this.cssInactive);
         
         this.filterOptions = filterOptions;
     }
@@ -397,9 +716,9 @@ class LuiTableFilterSuggestions extends LuiElement{
     set state(active){
 
         if(active != this.__state__ && active)
-            this.domElement.classList.remove(this.cssInactive);
+            super.domElement.classList.remove(this.cssInactive);
         else
-            this.domElement.classList.add(this.cssInactive);
+            super.domElement.classList.add(this.cssInactive);
 
         this.__state__ = active;
     }
@@ -411,10 +730,10 @@ class LuiTableFilterSuggestions extends LuiElement{
     set filterOptions(filters : Array<string>){
         let suggestions = this;
         this.__options__ = [];
-        super.clearChildren();
-        this.domElement.innerHTML = '';
+        super.children.clear();
+        super.domElement.innerHTML = '';
         filters.forEach(function(item, index){
-            suggestions.addChild(
+            suggestions.children.add(
                 new LuiTableFilterSuggestion(item)
             );
         });
@@ -433,7 +752,7 @@ class LuiTableFilterSuggestions extends LuiElement{
         });
 
         if(this.__markedIndex__ > -1)
-            [...this.children][this.__markedIndex__].marked = true;
+            this.children.elementAt(this.__markedIndex__).marked = true;
         
     }
 
@@ -456,16 +775,16 @@ class LuiTableFilterSuggestions extends LuiElement{
     }
 
     get children(){
-        return this.__children__ as Set<LuiTableFilterSuggestion>;
+        return super.children as LUI.ElementChildren<LuiTableFilterSuggestion>;
     }
 
 }
 
-class LuiTableColumnFilter extends LuiElement{
+class LuiTableColumnFilter extends LuiElement<LuiTableColumnFilters>{
     __header__ = '';
     __filter__ : string = '';
 
-    constructor(header, filter){
+    constructor(header : string, filter : string){
         super('div');
         this.__header__ = header;
         this.__filter__ = filter;
@@ -478,7 +797,7 @@ class LuiTableColumnFilter extends LuiElement{
     }
 }
 
-class LuiTableColumnFilters extends LuiElement{
+class LuiTableColumnFilters extends LuiParentElement<LuiTable, LuiTableColumnFilter>{
 
     __filterMap__ : Map<number, LuiTableColumnFilter> = new Map<number, LuiTableColumnFilter>();
 
@@ -486,7 +805,7 @@ class LuiTableColumnFilters extends LuiElement{
             super(element, 'lui-table-active-filters');
             this.parent = parentTable;
             this.on('click', (e) => {
-                let element = LuiElement.__domMap__.get(e.target as HTMLElement);
+                let element = LuiParentElement.__domMap__.get(e.target as HTMLElement);
 
                 if(element == this)
                     return;
@@ -494,9 +813,9 @@ class LuiTableColumnFilters extends LuiElement{
                 this.__filterMap__.forEach((v, k) =>{
                     if(v == element){
                         this.__filterMap__.delete(k);
-                        this.parent.rows.forEach(r => {
-                            Array.from<LuiTableRowCell>(r.children)[k].filtered = false;
-                        });
+                        this.parent.rows.forEach(r => 
+                            r.children.elementAt(k).filtered = false
+                        );
                     }
                         
                         
@@ -513,40 +832,23 @@ class LuiTableColumnFilters extends LuiElement{
         );
 
         this.__filterMap__.set(index, newFilter);
-        this.addChild(
+        this.children.add(
             newFilter
         );
 
-        this.parent.rows.forEach(r => {
-            let cIndex = 0;
-            r.children.forEach(c => {
-                if(cIndex == index)
-                    c.tryApplyFilter(newFilter.filter)
-                
-                cIndex++;
-            });
-        });
-    }
-
-    set parent(parent : LuiTable){
-        this.__parent__ = parent;
-    }
-
-    get parent(){
-        return this.__parent__ as LuiTable;
-    }
-
-    addChild(child : LuiTableColumnFilter){
-        super.addChild(child);
+        this.parent.rows.forEach(
+            r => r.children
+                .elementAt(index)
+                .tryApplyFilter(newFilter.filter)
+        );
     }
 
 }
 
-class LuiTableFilter extends LuiElement{
+class LuiTableFilter extends LuiParentElement<LuiTable, ILuiElement>{
 
-    table : LuiTable = undefined;
     __entry__ : LuiEntry = undefined;
-    __button__ : LuiElement = undefined;
+    __button__ : LuiElement<LuiTableFilter> = undefined;
     __suggestions__ : LuiTableFilterSuggestions = undefined;
 
 
@@ -557,7 +859,7 @@ class LuiTableFilter extends LuiElement{
             'lui-filter'
         );
 
-        this.table = parentTable;
+        super.parent = parentTable;
 
         if(isNodeOrElement(element)){
             this.constructFromDom(element);
@@ -584,12 +886,13 @@ class LuiTableFilter extends LuiElement{
                     if(e.target.value == '')
                         return;
                     else
-                        this.table.columnFilters.add(
+                        this.parent.columnFilters.add(
                             this.__suggestions__.markedIndex,
                             e.target.value
                         );
-                        e.target.value = 0;
+                        e.target.value = '';
                         this.__suggestions__.clearMarking();
+                        (e.target as HTMLInputElement).blur();
                         //apply filter
                 break;
                 default:
@@ -603,7 +906,7 @@ class LuiTableFilter extends LuiElement{
             this.__suggestions__.state = false;
             this.__suggestions__.clearMarking();
         };
-        this.__suggestions__.filterOptions = this.table.TableHeader.headers;
+        this.__suggestions__.filterOptions = this.parent.TableHeader.headers;
     }
 
 }
@@ -648,9 +951,9 @@ class LuiTableColumn{
 
 }
 
-class LuiTableRowCell extends LuiElement{
+class LuiTableRowCell extends LuiElement<LuiTableRow>{
     __column__ = undefined;
-    __cssName__ = 'lui-table-col-';
+    __cssNameC__ = 'lui-table-col-';
     private __filtered__ : boolean = false;
 
     get column(){
@@ -661,11 +964,11 @@ class LuiTableRowCell extends LuiElement{
         this.domElement.classList.forEach((c) => {
             this.domElement.classList.remove(c);
         });
-        this.domElement.classList.add(`${this.__cssName__}${integer}`);
+        this.domElement.classList.add(`${this.__cssNameC__}${integer}`);
     }
 
     constructor(row : LuiTableRow, element){
-        super(element); //TODO: add class based on column width
+        super(element, ); //TODO: add class based on column width
 
         this.parent = row;
         //this.__column__ = column;
@@ -678,8 +981,6 @@ class LuiTableRowCell extends LuiElement{
     }
 
     tryApplyFilter(filter) : boolean{
-        let lowCase = this.domElement.innerText.toLowerCase();
-        let upCase = this.domElement.innerText.toUpperCase();
         let rex = new RegExp(filter);
         if(rex.test(this.domElement.innerText))//(rex.test(lowCase) || rex.test(upCase)))
             return false;
@@ -699,27 +1000,30 @@ class LuiTableRowCell extends LuiElement{
             this.filterChange();
     }
 
-    public get parent(){
-        return this.__parent__ as LuiTableRow;
+    public get content(){
+        return this.domElement.innerText;
     }
 
-    public set parent(parent : LuiTableRow){
-        this.__parent__ = parent;
-        this.__parent__.addChild(this);
+    public set content(content : string | any){
+        if(! (typeof content === 'string'))
+            content = content.toString();
+        
+        this.domElement.innerText = content;
     }
 
     filterChange(){
-        let arr : Array<LuiTableRowCell> = Array.from(this.parent.children);
-        if(arr.filter((c, i, arr) => c.filtered).length == 0)
-            this.parent.unfold();
-        else
+        let pChildren = this.parent.children;
+        if(this.parent.children.filter((c, i, pChildren) => c.filtered).size)
             this.parent.collapse();
+        else
+            this.parent.unfold();
     }
 }
 
-class LuiTableRow extends LuiElement{
+class LuiTableRow extends LuiParentElement<LuiTableBody, LuiTableRowCell>{
 
     __collapsed__ = false;
+    private __removeOnCollapse__: boolean;
 
     constructor(element, parentBody : LuiTableBody){
         super(element, 'lui-table-row');
@@ -736,7 +1040,7 @@ class LuiTableRow extends LuiElement{
         });
     }
 
-    set collapsed(col){
+    set collapsed(col : boolean ){
         if(this.__collapsed__ == col)
             return;
 
@@ -753,6 +1057,10 @@ class LuiTableRow extends LuiElement{
                 this.domElement.classList.add(LUI.cssClasses.hidden)
                 this.domElement.classList.remove('collapse');
                 this.clearEventListenersFor('transitionend');
+                if(this.__removeOnCollapse__){
+                    this.domElement.remove();
+                    this.__removeOnCollapse__ = false;
+                }
             });
             this.domElement.classList.add('collapse');
             this.__collapsed__ = true;
@@ -777,17 +1085,14 @@ class LuiTableRow extends LuiElement{
         super.addChild(child);
     }
 
-    public set parent(parent : LuiTableBody){
-        this.__parent__ = parent;
-    }
-
-    public get parent(){
-        return this.__parent__ as LuiTableBody;
+    public set collapseAndRemove(active : boolean){
+        this.__removeOnCollapse__ = active;
+        this.collapsed = true;
     }
 
 }
 
-class LuiTableBody extends LuiElement{
+class LuiTableBody extends LuiParentElement<LuiTable, LuiTableRow>{
 
     constructor(element : HTMLElement, parentTable : LuiTable){
         let css = 'lui-table-body';
@@ -805,16 +1110,46 @@ class LuiTableBody extends LuiElement{
         });
     }
 
-    get children(){
-        return this.__children__ as Set<LuiTableRow>;
-    }
 
-    get parent(){
-        return this.__parent__ as LuiTable;
-    }
+    public sortBy(cellIndex : number, order : LUI.sortingOrder, dataType : LUI.sortingType = LUI.sortingType.TEXT) : void{
 
-    set parent(parent : LuiTable){
-        this.__parent__ = parent;
+        //fadeout all rows 
+        this.children.forEach( r => r.collapseAndRemove = true);
+
+        //rearrange by order
+        let sortable = Array.from<LuiTableRow>(this.children);
+        this.children.clear();
+
+        let sorted = sortable.sort((a, b) => {
+
+            let aContent = Array.from<LuiTableRowCell>(a.children)[cellIndex].content;
+            let bContent = Array.from<LuiTableRowCell>(b.children)[cellIndex].content;
+
+            let sortingFunc = (a, b) : number => {
+                switch(dataType){
+                    case LUI.sortingType.DATE:
+                        return LUI.sortAsDate(a, b);
+                    case LUI.sortingType.NUMBER:
+                        return LUI.sortAsNumber(a, b);
+                    default:
+                        return LUI.sortAsText(a, b);
+                }
+            };
+            
+            switch(order){
+                case LUI.sortingOrder.descending:
+                    return sortingFunc(aContent, bContent);
+                default:
+                    return -1 * sortingFunc(aContent, bContent);
+            }
+
+            return 0;
+        });
+
+        //sorted.forEach()
+
+        //insert them in correct order in dom, and in the child set of body
+
     }
 }
 

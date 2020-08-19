@@ -643,10 +643,21 @@ body .lui-emphasized{
 [class*="lui-table-col-"].lui-col-header{
     font-weight: 600;
     color: #0e141f;
+    cursor: pointer;
 }
 
 [class*="lui-table-col-"].lui-col-header:after{
     content: ': ';
+}
+
+[class*="lui-table-col-"].lui-col-header.sort-desc:before{
+    content: '↓';
+    font-weight: bold;
+}
+
+[class*="lui-table-col-"].lui-col-header.sort-asc:before{
+    content: '↑';
+    font-weight: bold;
 }
 
 [class*="lui-table-col-"]{
