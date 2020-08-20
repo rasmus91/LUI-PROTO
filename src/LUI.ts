@@ -44,10 +44,13 @@ namespace LUI{
         insert(index : number, element : T);
         //filter<S extends T>(callbackfn: (value: T, index: number, IOrderedSet: IOrderedSet<T>) => value is S, thisArg?: any): IOrderedSet<S>;
         filter(callbackfn: (value: T, index: number, iOrderedSet : IOrderedSet<T>) => unknown, thisArg? : any): IOrderedSet<T>;
+        sort(compareFn?: (a: T, b: T) => number) : this;
+        indexOf(element: T) : number;
 
     }
 
     export class OrderedSet<T> implements IOrderedSet<T>{
+        
         
         public static from<S>(arr : Array<S>) : OrderedSet<S>{
             let result = new OrderedSet<S>();
@@ -57,6 +60,10 @@ namespace LUI{
         
         private __data__ : Array<T> = new Array<T>();
         private __iteratingCurrent__: any;
+
+        indexOf(element: T) : number{
+            return this.__data__.indexOf(element);
+        }
 
         insert(index : number, element : T) : boolean{
             if(this.size <= index)
@@ -147,6 +154,12 @@ namespace LUI{
         keys(): IterableIterator<T> {
             return this;
         }
+
+        sort(compareFn?: (a: T, b: T) => number): this {
+            this.__data__ = this.__data__.sort(compareFn);
+            return this;
+        }
+
         values(): IterableIterator<T> {
             return this;
         }
@@ -222,6 +235,16 @@ namespace LUI{
         clear() : void{
             this.forEach(c => c.remove());
             super.clear();
+        }
+
+        sort(compareFn?: (a: T, b: T) => number): this {
+
+            super.sort(compareFn);
+
+            this.__element__.childNodes.forEach(e => e.remove());
+            this.forEach(e => this.__element__.appendChild(e.domElement));
+
+            return this;
         }
 
     }
@@ -543,6 +566,10 @@ class LuiTable extends LuiParentElement<ILuiElement, ILuiElement>{
         return this.__body__.children;
     }
 
+    get body(){
+        return this.__body__;
+    }
+
 }
 
 class LuiEntry extends LuiElement<ILuiElement>{
@@ -653,7 +680,7 @@ class LuiTableHeader extends LuiParentElement<LuiTable, LuiTableHead>{
             );
         });
     }
-
+    //TODO: make this code call 'LuiTableBody.sort' when set.
     public set sortedColumn(header : LuiTableHead){
         this.children.forEach(e => {
             if(e === header)
@@ -661,6 +688,11 @@ class LuiTableHeader extends LuiParentElement<LuiTable, LuiTableHead>{
 
             e.sorting = LUI.sortingOrder.none;
         });
+
+        this.parent.body.sortBy(
+            this.children.indexOf(header),
+            header.sorting
+        );
     }
 
     public get children(){
@@ -1085,11 +1117,6 @@ class LuiTableRow extends LuiParentElement<LuiTableBody, LuiTableRowCell>{
         super.addChild(child);
     }
 
-    public set collapseAndRemove(active : boolean){
-        this.__removeOnCollapse__ = active;
-        this.collapsed = true;
-    }
-
 }
 
 class LuiTableBody extends LuiParentElement<LuiTable, LuiTableRow>{
@@ -1113,17 +1140,11 @@ class LuiTableBody extends LuiParentElement<LuiTable, LuiTableRow>{
 
     public sortBy(cellIndex : number, order : LUI.sortingOrder, dataType : LUI.sortingType = LUI.sortingType.TEXT) : void{
 
-        //fadeout all rows 
-        this.children.forEach( r => r.collapseAndRemove = true);
 
-        //rearrange by order
-        let sortable = Array.from<LuiTableRow>(this.children);
-        this.children.clear();
+        this.children.sort((a, b) => {
 
-        let sorted = sortable.sort((a, b) => {
-
-            let aContent = Array.from<LuiTableRowCell>(a.children)[cellIndex].content;
-            let bContent = Array.from<LuiTableRowCell>(b.children)[cellIndex].content;
+            let aContent = a.children.elementAt(cellIndex).content;
+            let bContent = b.children.elementAt(cellIndex).content;
 
             let sortingFunc = (a, b) : number => {
                 switch(dataType){
@@ -1145,10 +1166,6 @@ class LuiTableBody extends LuiParentElement<LuiTable, LuiTableRow>{
 
             return 0;
         });
-
-        //sorted.forEach()
-
-        //insert them in correct order in dom, and in the child set of body
 
     }
 }
