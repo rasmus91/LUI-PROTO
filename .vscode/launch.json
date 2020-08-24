@@ -5,11 +5,11 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch Table.html",
+            "name": "Launch App.html",
             "type": "firefox",
             "request": "launch",
             "reAttach": true,
-            "file": "${workspaceFolder}/Table.html"
+            "file": "${workspaceFolder}/App.html"
         },
         {
             "name": "Launch localhost",

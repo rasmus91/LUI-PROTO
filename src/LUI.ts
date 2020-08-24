@@ -10,6 +10,7 @@ namespace LUI{
         ascending = 2
     }
 
+
     export enum sortingType {
         TEXT = 0,
         DATE = 1,
@@ -187,11 +188,11 @@ namespace LUI{
 
     }
 
-    export class ElementChildren<T extends ILuiElement> extends OrderedSet<T>{
+    export class ElementChildren<T extends LUI.ILuiElement> extends OrderedSet<T>{
         private __element__: HTMLElement;
-        private __parent__ : ILuiElement;
+        private __parent__ : LUI.ILuiElement;
 
-        constructor(element : ILuiElement){
+        constructor(element : LUI.ILuiElement){
             super();
             this.__element__ = element.domElement;
             this.__parent__ = element;
@@ -249,145 +250,255 @@ namespace LUI{
 
     }
 
-
-}
-
-interface ILuiElement{
-    domElement : HTMLElement;
-    cssName : string;
-    children : LUI.ElementChildren<ILuiElement>;
-    remove();
-    parent : ILuiElement;
-}
-
-class LuiElement<Tparent extends ILuiElement> implements ILuiElement{
-    static __domMap__ = new Map<HTMLElement, ILuiElement>();
-
-    private __eventListeners__ = [];
-    private __parent__ : Tparent;
-    private __domElement__ : HTMLElement; 
-    private __cssName__ : string;
-    protected __children__ : LUI.ElementChildren<ILuiElement> = undefined;
-
-    constructor(element : string | HTMLElement, cssName : string = undefined){
-        if(element instanceof HTMLElement)
-            this.__domElement__ = element
-        else if(typeof element === 'string')
-            this.__domElement__ = document.createElement(element);
-        else
-            throw new Error('Element must be a valid HTML Tag name');
-        
-        if(cssName != undefined)
-            this.__cssName__ = cssName;
-
-        if(this.__cssName__ != undefined)
-            this.__domElement__.classList.add(cssName);
-
-        this.__children__ = new LUI.ElementChildren<ILuiElement>(this);
-
-        LuiElement.__domMap__.set(this.__domElement__, this);
-    }
-
-    public get parent(){
-        return this.__parent__;
-    }
-
-    public set parent(element : Tparent){
-        this.__parent__ = element;
-        if(this.__parent__ != null)
-            this.__parent__.children.add(this);
-    }
-
-    public get children(){
-        return this.__children__;
-    }
-
-    public get cssName(){
-        return this.__cssName__;
-    }
-
-    public get domElement(){
-        return this.__domElement__;
-    }
-
-    public remove(){
-        
-        this.children.clear();
-
-        if(this.parent != null || this.parent != undefined)
-            this.parent.children.delete(this);
-        
-        LuiParentElement.__domMap__.delete(this.domElement);
-
-        this.domElement.remove();
-    }
-
-    on(eventname :string, handler : EventListener){
-        this.__eventListeners__.push({
-            selector: undefined,
-            event: eventname,
-            handler: handler
-        });
-
-        this.__domElement__.addEventListener(eventname, handler);
-    }
-
-    clearEventListenersFor(eventname : string){
-        this.__eventListeners__.forEach(e => {
-            if(eventname === e.event)
-                this.__domElement__.removeEventListener(
-                    e.event,
-                    e.handler
-                );
-        });
-    }
-
-    clearEventHandlers(){
-        this.__eventListeners__.forEach(function(item, index){
-            this.domElement.removeEventListener(item.event, item.handler);
-        });        
-    }
-
-}
-
-class LuiParentElement<Tparent extends ILuiElement, Tchild extends ILuiElement> extends LuiElement<Tparent>{
-
-    protected __children__ : LUI.ElementChildren<Tchild>;
-
-    get children(){
-        return this.__children__ as LUI.ElementChildren<Tchild>;
-    }
-
-
-    constructor(element : string | HTMLElement, cssName : string = undefined){
-        super(element, cssName);
-    
-        this.__children__ = new LUI.ElementChildren<Tchild>(this);
+    export interface ILuiElement{
+        domElement : HTMLElement;
+        cssName : string;
+        children : LUI.ElementChildren<LUI.ILuiElement>;
+        remove();
+        parent : LUI.ILuiElement;
     }
 
     
-
-    addChild(child : Tchild, index : number = undefined){
-        
-        if(child.parent == undefined)
-            child.parent = this;
-        else if(child.parent != this)
+    export class LuiElement<Tparent extends LUI.ILuiElement> implements LUI.ILuiElement{
+        static __domMap__ = new Map<HTMLElement, LUI.ILuiElement>();
+    
+        private __eventListeners__ = [];
+        private __parent__ : Tparent;
+        private __domElement__ : HTMLElement; 
+        private __cssName__ : string;
+        protected __children__ : LUI.ElementChildren<LUI.ILuiElement> = undefined;
+    
+        constructor(element : string | HTMLElement, cssName : string = undefined){
+            if(element instanceof HTMLElement)
+                this.__domElement__ = element
+            else if(typeof element === 'string')
+                this.__domElement__ = document.createElement(element);
+            else
+                throw new Error('Element must be a valid HTML Tag name');
             
+            if(cssName != undefined)
+                this.__cssName__ = cssName;
+    
+            if(this.__cssName__ != undefined)
+                this.__domElement__.classList.add(cssName);
+    
+            this.__children__ = new LUI.ElementChildren<LUI.ILuiElement>(this);
+    
+            LUI.LuiElement.__domMap__.set(this.__domElement__, this);
+        }
+    
+        public get parent(){
+            return this.__parent__;
+        }
+    
+        public set parent(element : Tparent){
+            this.__parent__ = element;
+            if(this.__parent__ != null)
+                this.__parent__.children.add(this);
+        }
+    
+        public get children(){
+            return this.__children__;
+        }
+    
+        public get cssName(){
+            return this.__cssName__;
+        }
+    
+        public get domElement(){
+            return this.__domElement__;
+        }
+    
+        public remove(){
+            
+            this.children.clear();
+    
+            if(this.parent != null || this.parent != undefined)
+                this.parent.children.delete(this);
+            
+            LUI.LuiParentElement.__domMap__.delete(this.domElement);
+    
+            this.domElement.remove();
+        }
+    
+        on(eventname :string, handler : EventListener){
+            this.__eventListeners__.push({
+                selector: undefined,
+                event: eventname,
+                handler: handler
+            });
+    
+            this.__domElement__.addEventListener(eventname, handler);
+        }
+    
+        clearEventListenersFor(eventname : string){
+            this.__eventListeners__.forEach(e => {
+                if(eventname === e.event)
+                    this.__domElement__.removeEventListener(
+                        e.event,
+                        e.handler
+                    );
+            });
+        }
+    
+        clearEventHandlers(){
+            this.__eventListeners__.forEach(function(item, index){
+                this.domElement.removeEventListener(item.event, item.handler);
+            });        
+        }
+    
+    }
 
-        if(this.__children__.has(child))
-            return;
+    export class LuiParentElement<Tparent extends LUI.ILuiElement, Tchild extends LUI.ILuiElement> extends LUI.LuiElement<Tparent>{
+
+        protected __children__ : LUI.ElementChildren<Tchild>;
+    
+        get children(){
+            return this.__children__ as LUI.ElementChildren<Tchild>;
+        }
+    
+    
+        constructor(element : string | HTMLElement, cssName : string = undefined){
+            super(element, cssName);
         
-        this.__children__.add(child);
-        child.parent = this;
-        super.domElement.appendChild(child.domElement);
+            this.__children__ = new LUI.ElementChildren<Tchild>(this);
+        }
+    
+        
+    
+        addChild(child : Tchild, index : number = undefined){
+            
+            if(child.parent == undefined)
+                child.parent = this;
+            else if(child.parent != this)
+                
+    
+            if(this.__children__.has(child))
+                return;
+            
+            this.__children__.add(child);
+            child.parent = this;
+            super.domElement.appendChild(child.domElement);
+        }
+    
+        clearChildren(){
+            this.children.forEach((e) => {
+                e.remove();
+            });
+        }
     }
 
-    clearChildren(){
-        this.children.forEach((e) => {
-            e.remove();
-        });
+    export class App extends LuiParentElement<ILuiElement, ILuiElement>{
+
+        constructor(){
+            super(document.body);
+            this.addNavBar();
+        }
+
+        protected addNavBar() : void{
+            this.children.add(new NavBar());
+        }
     }
+
+    class NavBar extends LuiParentElement<App, LuiElement<NavBar>>{
+
+        constructor(title : string = 'Untitled'){
+            super('div', 'lui-nav-bar');
+            
+            this.addMobileBackNavigation();
+            this.addHeader(title);
+            this.addNavigation();
+        }
+
+        protected addMobileBackNavigation(){
+            this.children.add(new NavBarLeftMobile());
+        }
+
+        protected addHeader(title : string){
+            this.children.add(new NavBarTitleArea(title));
+        }
+
+        protected addNavigation(){
+
+        }
+
+    }
+
+    class NavBarLeftMobile extends LuiParentElement<NavBar, NavBarMobileBack>{
+        constructor(){
+            super('div', 'lui-nav-bar-mobile-left');
+            this.children.add(new NavBarMobileBack());
+        }
+    }
+
+    class NavBarMobileBack extends LuiElement<NavBarLeftMobile>{
+        constructor(label : string = 'Tilbage'){
+            super('div', 'lui-nav-back');
+            this.domElement.textContent = label;
+        }
+    }
+
+    class NavBarTitleArea extends LuiParentElement<NavBar, NavBarHeader>{
+        constructor(label : string){
+            super('div', 'lui-nav-bar-title');
+            this.addHeader(label);
+        }
+
+        protected addHeader(label : string){
+            this.children.add(new NavBarHeader(label));
+        }
+    }
+
+    class NavBarHeader extends LuiElement<NavBarTitleArea>{
+
+        constructor(label : string){
+            super('div', 'lui-nav-header');
+            this.domElement.textContent = label;
+        }
+    }
+
+    class NavBarNavigationArea extends LuiParentElement<NavBar, NavBarMenu>{
+
+        constructor(){
+            super('div', 'lui-nav-bar-navigation');
+
+        }
+
+        protected addMenu(){
+            this.children.add(new NavBarMenu());
+        }
+    }
+
+    class NavBarMenu extends LuiParentElement<NavBarNavigationArea, NavBarMenuLinkArea>{
+        constructor(){
+            super('div', 'lui-nav-bar-menu');
+            this.addLinkArea();
+        }
+
+        protected addLinkArea() : void{
+            this.children.add(new NavBarMenuLinkArea());
+        }
+    }
+
+    class NavBarMenuLinkArea extends LuiParentElement<NavBarMenu, NavBarMenuLink>{
+        constructor(){
+            super('div', 'lui-nav-bar-link-area')
+        }
+    }
+
+    class NavBarMenuLink extends LuiElement<NavBarMenuLinkArea>{
+        constructor(label : string = ''){
+            super('a');
+        }
+    }
+
 }
+
+
+
+
+
+
 
 function isFunction(functionToCheck) {
     return functionToCheck && {}.toString.call(functionToCheck) === '[object Function]';
@@ -452,13 +563,13 @@ let navigateBack = function(){
 }
 
 //Handle back button
-document.getElementsByClassName('lui-nav-back')[0].addEventListener('click', function(e){
+/*document.getElementsByClassName('lui-nav-back')[0].addEventListener('click', function(e){
     navigateBack();
-});
+});*/
 
 
 //enables activation/deactivation of the navigation menu by pressing the burgermenu (before area of the lui-nav-bar-menu)
-document.getElementsByClassName('lui-nav-bar-menu')[0].addEventListener('click', function(e){
+/*document.getElementsByClassName('lui-nav-bar-menu')[0].addEventListener('click', function(e){
     let toggleNavMenu = function(){
         this.classList.contains('active') ?
             this.classList.remove('active') :
@@ -474,16 +585,16 @@ document.getElementsByClassName('lui-nav-bar-menu')[0].addEventListener('click',
         toggleContentShadow(true);
     }
 });
-
+*/
 
 
 //Prevents activation/deactivation of the nav menu by clicking the navigation area
-document.getElementsByClassName('lui-nav-bar-link-area')[0].addEventListener('click', function(e){
+/*document.getElementsByClassName('lui-nav-bar-link-area')[0].addEventListener('click', function(e){
     e.stopPropagation();
-});
+});*/
 
 
-document.getElementsByClassName('lui-nav-bar-link-area')[0].addEventListener('click', function(e){
+/*document.getElementsByClassName('lui-nav-bar-link-area')[0].addEventListener('click', function(e){
     let et = e.target as HTMLElement;
     if(et.nodeName == 'A')
         this.querySelector('a').array.forEach(element => {
@@ -503,10 +614,10 @@ document.getElementsByClassName('lui-focused-shadow')[0].addEventListener('click
 document.addEventListener("keyup", function(e){
     if(e.key == 'Escape')
         navigateBack();
-});
+});*/
 
 // Table Logic
-class LuiTable extends LuiParentElement<ILuiElement, ILuiElement>{
+class LuiTable extends LUI.LuiParentElement<LUI.ILuiElement, LUI.ILuiElement>{
     static get cssName(){
         return 'lui-table';
     }
@@ -572,7 +683,7 @@ class LuiTable extends LuiParentElement<ILuiElement, ILuiElement>{
 
 }
 
-class LuiEntry extends LuiElement<ILuiElement>{
+class LuiEntry extends LUI.LuiElement<LUI.ILuiElement>{
     constructor(element = null, cssName = undefined){
         super(element, cssName);
         this.domElement.type = 'text';
@@ -598,7 +709,7 @@ class LuiEntry extends LuiElement<ILuiElement>{
     
 }
 
-class LuiTableHead extends LuiElement<LuiTableHeader>{
+class LuiTableHead extends LUI.LuiElement<LuiTableHeader>{
     private __sorting__ : LUI.sortingOrder = LUI.sortingOrder.none;
 
     constructor(element : HTMLElement | string, parent : LuiTableHeader){
@@ -653,7 +764,7 @@ class LuiTableHead extends LuiElement<LuiTableHeader>{
 
 }
 
-class LuiTableHeader extends LuiParentElement<LuiTable, LuiTableHead>{
+class LuiTableHeader extends LUI.LuiParentElement<LuiTable, LuiTableHead>{
     __headerElements__ : NodeListOf<HTMLElement> = undefined;
     headers : Array<string> = undefined;
 
@@ -701,7 +812,7 @@ class LuiTableHeader extends LuiParentElement<LuiTable, LuiTableHead>{
     
 }
 
-class LuiTableFilterSuggestion extends LuiElement<LuiTable>{
+class LuiTableFilterSuggestion extends LUI.LuiElement<LuiTable>{
 
     __cssMarked__ = 'marked';
     __marked__ : boolean = false;
@@ -725,7 +836,7 @@ class LuiTableFilterSuggestion extends LuiElement<LuiTable>{
 
 }
 
-class LuiTableFilterSuggestions extends LuiParentElement<LuiTableFilter, LuiTableFilterSuggestion>{
+class LuiTableFilterSuggestions extends LUI.LuiParentElement<LuiTableFilter, LuiTableFilterSuggestion>{
     cssInactive = 'inactive';
     __state__ = false;
     __options__ = [];
@@ -812,7 +923,7 @@ class LuiTableFilterSuggestions extends LuiParentElement<LuiTableFilter, LuiTabl
 
 }
 
-class LuiTableColumnFilter extends LuiElement<LuiTableColumnFilters>{
+class LuiTableColumnFilter extends LUI.LuiElement<LuiTableColumnFilters>{
     __header__ = '';
     __filter__ : string = '';
 
@@ -829,7 +940,7 @@ class LuiTableColumnFilter extends LuiElement<LuiTableColumnFilters>{
     }
 }
 
-class LuiTableColumnFilters extends LuiParentElement<LuiTable, LuiTableColumnFilter>{
+class LuiTableColumnFilters extends LUI.LuiParentElement<LuiTable, LuiTableColumnFilter>{
 
     __filterMap__ : Map<number, LuiTableColumnFilter> = new Map<number, LuiTableColumnFilter>();
 
@@ -837,7 +948,7 @@ class LuiTableColumnFilters extends LuiParentElement<LuiTable, LuiTableColumnFil
             super(element, 'lui-table-active-filters');
             this.parent = parentTable;
             this.on('click', (e) => {
-                let element = LuiParentElement.__domMap__.get(e.target as HTMLElement);
+                let element = LUI.LuiParentElement.__domMap__.get(e.target as HTMLElement);
 
                 if(element == this)
                     return;
@@ -877,10 +988,10 @@ class LuiTableColumnFilters extends LuiParentElement<LuiTable, LuiTableColumnFil
 
 }
 
-class LuiTableFilter extends LuiParentElement<LuiTable, ILuiElement>{
+class LuiTableFilter extends LUI.LuiParentElement<LuiTable, LUI.ILuiElement>{
 
     __entry__ : LuiEntry = undefined;
-    __button__ : LuiElement<LuiTableFilter> = undefined;
+    __button__ : LUI.LuiElement<LuiTableFilter> = undefined;
     __suggestions__ : LuiTableFilterSuggestions = undefined;
 
 
@@ -902,7 +1013,7 @@ class LuiTableFilter extends LuiParentElement<LuiTable, ILuiElement>{
 
     constructFromDom(element){
         this.__entry__ = new LuiEntry(element.querySelector('input'));
-        this.__button__ = new LuiElement(element.querySelector('div'));
+        this.__button__ = new LUI.LuiElement(element.querySelector('div'));
         this.__suggestions__ = new LuiTableFilterSuggestions(element.querySelector('ul'));
         this.__entry__.onInputChange = (e) => {
             //check if key is direction up, down or enter
@@ -983,7 +1094,7 @@ class LuiTableColumn{
 
 }
 
-class LuiTableRowCell extends LuiElement<LuiTableRow>{
+class LuiTableRowCell extends LUI.LuiElement<LuiTableRow>{
     __column__ = undefined;
     __cssNameC__ = 'lui-table-col-';
     private __filtered__ : boolean = false;
@@ -1052,7 +1163,7 @@ class LuiTableRowCell extends LuiElement<LuiTableRow>{
     }
 }
 
-class LuiTableRow extends LuiParentElement<LuiTableBody, LuiTableRowCell>{
+class LuiTableRow extends LUI.LuiParentElement<LuiTableBody, LuiTableRowCell>{
 
     __collapsed__ = false;
     private __removeOnCollapse__: boolean;
@@ -1119,7 +1230,7 @@ class LuiTableRow extends LuiParentElement<LuiTableBody, LuiTableRowCell>{
 
 }
 
-class LuiTableBody extends LuiParentElement<LuiTable, LuiTableRow>{
+class LuiTableBody extends LUI.LuiParentElement<LuiTable, LuiTableRow>{
 
     constructor(element : HTMLElement, parentTable : LuiTable){
         let css = 'lui-table-body';
