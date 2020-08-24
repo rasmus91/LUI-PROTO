@@ -36,6 +36,11 @@ namespace LUI{
         return 0;
     }
 
+    enum side{
+        RIGHT = 'right', 
+        LEFT = 'left'
+    };
+
     export interface IOrderedSet<T> extends Set<T>{
 
         add(element) : any;
@@ -393,10 +398,15 @@ namespace LUI{
         constructor(){
             super(document.body);
             this.addNavBar();
+            this.addContent();
         }
 
         protected addNavBar() : void{
             this.children.add(new NavBar());
+        }
+
+        protected addContent() : void{
+            this.children.add(new Content());
         }
     }
 
@@ -404,6 +414,7 @@ namespace LUI{
 
         constructor(title : string = 'Untitled'){
             super('div', 'lui-nav-bar');
+            this.domElement.classList.add('lui-row');
             
             this.addMobileBackNavigation();
             this.addHeader(title);
@@ -419,7 +430,7 @@ namespace LUI{
         }
 
         protected addNavigation(){
-
+            this.children.add(new NavBarNavigationArea());
         }
 
     }
@@ -461,7 +472,7 @@ namespace LUI{
 
         constructor(){
             super('div', 'lui-nav-bar-navigation');
-
+            this.addMenu();
         }
 
         protected addMenu(){
@@ -487,9 +498,96 @@ namespace LUI{
     }
 
     class NavBarMenuLink extends LuiElement<NavBarMenuLinkArea>{
-        constructor(label : string = ''){
+        constructor(label : string = '', link : string){
             super('a');
+            this.domElement.setAttribute('href', `#${link}`)
         }
+    }
+
+    class Content extends LuiParentElement<App, LuiElement<Content>>{
+
+        constructor(){
+            super('div', 'lui-content');
+            this.domElement.classList.add('lui-row');
+
+            this.addShadows();
+            this.addSidebarLeft();
+            this.addMain();
+            this.addSidebarRight();
+        }
+
+        protected addShadows() : void{
+            this.children.add(new ContentShadow());
+            this.children.add(new FocusedShadow());
+        }
+
+        protected addSidebarLeft(width : number = 3) : void{
+            this.children.add(new SideBar(side.LEFT));
+        }
+
+        protected addMain() : void{
+            this.children.add(new Main());
+        }
+
+        protected addSidebarRight(width : number = 3) : void{
+            this.children.add(new SideBar(side.RIGHT));
+        }
+    }
+
+    class ContentShadow extends LuiElement<Content>{
+        constructor(){
+            super('div', 'lui-content-shadowed');
+        }
+    }
+
+    class FocusedShadow extends LuiElement<Content>{
+        constructor(){
+            super('div', 'lui-focused-shadow');
+        }
+    }
+
+    class SideBar extends LuiElement<Content>{
+        protected __width__ : number;
+
+        constructor(side : side, width : number = 3){
+            super('div', `lui-sidebar-${side}`);
+            this.width = width;
+        }
+
+        public set width(width : number){
+            if(width > 4)
+                width = 4;
+            
+            if(width < 0)
+                width = 0;
+
+            this.__width__ = width;
+            let rex = new RegExp('lui-col-[0-9]+');
+            this.domElement.classList.forEach((c) => {
+                if(rex.test(c))
+                    this.domElement.classList.remove(c);
+            });
+            this.domElement.classList.add(`lui-col-${width}`);
+        }
+
+        public get width(){
+            return this.__width__;
+        }
+    }
+
+    class Main extends LuiParentElement<Content, Emphasized>{
+        constructor(){
+            super('div', 'lui-main');
+            this.domElement.classList.add('lui-col-6');
+        }
+    }
+
+    class Emphasized extends LuiParentElement<Main, LuiElement<Emphasized>>{
+
+        constructor(){
+            super('div', 'lui-emphasized');
+        }
+
     }
 
 }
