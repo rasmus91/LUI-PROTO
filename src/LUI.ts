@@ -267,6 +267,7 @@ namespace LUI{
     export class LuiElement<Tparent extends LUI.ILuiElement> implements LUI.ILuiElement{
         static __domMap__ = new Map<HTMLElement, LUI.ILuiElement>();
     
+        private __active__ : boolean;
         private __eventListeners__ = [];
         private __parent__ : Tparent;
         private __domElement__ : HTMLElement; 
@@ -313,7 +314,64 @@ namespace LUI{
         public get domElement(){
             return this.__domElement__;
         }
+
+        public get active(){
+            return this.__active__;
+        }
+
+        public set active(active){
+            if(this.__active__ != active && active)
+                this.domElement.classList.add('active');
+            else if(this.__active__ != active && !active)
+                this.domElement.classList.remove('active');
+
+            this.__active__ = active;
+        }
     
+        public hide(milliseconds : number = undefined, callback : CallableFunction = undefined) : void{
+            if(milliseconds == undefined){
+                this.domElement.classList.add(cssClasses.hidden)
+                if(callback != undefined)
+                    callback();
+                return;
+            }
+
+            this.domElement.style.transition = `opacity ${milliseconds}ms`;
+            let previousValue = this.domElement.style.opacity;
+            this.on('transitionend', e => {
+                this.domElement.style.opacity = previousValue;
+                this.domElement.style.transition = '';
+                this.clearEventListenersFor('transitionend');
+                this.hide();
+            });
+            this.domElement.style.opacity = '0';
+                
+        }
+
+        public show(milliseconds : number = undefined, callback : CallableFunction = undefined) : void{
+            if(milliseconds == undefined){
+                this.domElement.classList.remove(cssClasses.hidden);
+                if(callback != undefined)
+                    callback();
+                return;
+            }
+
+            let previousValue = this.domElement.style.opacity;
+            let previousTrans = this.domElement.style.transition;
+            this.domElement.style.opacity = '0';
+            this.domElement.style.transition = `opacity ${milliseconds}ms`;
+
+            this.on('transitionend', e => {
+                this.domElement.style.transition = previousTrans;
+                this.clearEventListenersFor('transitionend');
+            });
+
+            this.domElement.classList.remove(cssClasses.hidden);
+            this.domElement.style.opacity = previousValue;
+            
+            
+        }
+
         public remove(){
             
             this.children.clear();
@@ -395,6 +453,9 @@ namespace LUI{
 
     export class App extends LuiParentElement<ILuiElement, ILuiElement>{
 
+        private __navBarIndex__ : number;
+        private __contentIndex__ : number;
+
         constructor(){
             super(document.body);
             this.addNavBar();
@@ -402,15 +463,27 @@ namespace LUI{
         }
 
         protected addNavBar() : void{
-            this.children.add(new NavBar());
+            this.__navBarIndex__ = this.children.add(new NavBar());
         }
 
         protected addContent() : void{
-            this.children.add(new Content());
+            this.__contentIndex__ = this.children.add(new Content());
         }
+
+        public get navbar(){
+            return this.children.elementAt(this.__navBarIndex__) as NavBar;
+        }
+
+        public get content(){
+            return this.children.elementAt(this.__contentIndex__) as Content;
+        }
+
     }
 
     class NavBar extends LuiParentElement<App, LuiElement<NavBar>>{
+
+        private __navigationIndex__ : number;
+        private __mobileBackIndex__ : number;
 
         constructor(title : string = 'Untitled'){
             super('div', 'lui-nav-bar');
@@ -422,7 +495,7 @@ namespace LUI{
         }
 
         protected addMobileBackNavigation(){
-            this.children.add(new NavBarLeftMobile());
+            this.__mobileBackIndex__ = this.children.add(new NavBarLeftMobile());
         }
 
         protected addHeader(title : string){
@@ -430,7 +503,15 @@ namespace LUI{
         }
 
         protected addNavigation(){
-            this.children.add(new NavBarNavigationArea());
+            this.__navigationIndex__ = this.children.add(new NavBarNavigationArea());
+        }
+
+        public get mobileBack(){
+            return this.children.elementAt(this.__mobileBackIndex__).children.elementAt(0) as NavBarMobileBack;
+        }
+
+        public get navigation(){
+            return this.children.elementAt(this.__navigationIndex__) as NavBarNavigationArea;
         }
 
     }
@@ -446,6 +527,7 @@ namespace LUI{
         constructor(label : string = 'Tilbage'){
             super('div', 'lui-nav-back');
             this.domElement.textContent = label;
+            
         }
     }
 
@@ -484,10 +566,23 @@ namespace LUI{
         constructor(){
             super('div', 'lui-nav-bar-menu');
             this.addLinkArea();
+            this.configureActivation();
         }
 
         protected addLinkArea() : void{
             this.children.add(new NavBarMenuLinkArea());
+        }
+
+        protected configureActivation(){
+            this.on('click', e => {
+                let shadow = this.parent.parent.parent.content.contentShadow;
+                
+                let newState = !this.active;
+
+                this.active = newState;
+                this.parent.parent.parent.content.contentShadow.active = newState;
+
+            });
         }
     }
 
@@ -506,38 +601,68 @@ namespace LUI{
 
     class Content extends LuiParentElement<App, LuiElement<Content>>{
 
+        private __leftSideBarIndex__ : number;
+        private __rightSideBarIndex__ : number;
+        private __historyStackIndex__ : number;
+        private __focusShadowIndex__ : number;
+        private __contentShadowIndex__ : number;
+
         constructor(){
             super('div', 'lui-content');
             this.domElement.classList.add('lui-row');
 
             this.addShadows();
             this.addSidebarLeft();
-            this.addMain();
+            this.addHistoryStack();
             this.addSidebarRight();
         }
 
         protected addShadows() : void{
-            this.children.add(new ContentShadow());
-            this.children.add(new FocusedShadow());
+            this.__contentShadowIndex__ = this.children.add(new ContentShadow());
+            this.__focusShadowIndex__ = this.children.add(new FocusedShadow());
         }
 
-        protected addSidebarLeft(width : number = 3) : void{
-            this.children.add(new SideBar(side.LEFT));
+        protected addSidebarLeft(width : number = 2) : void{
+            this.__leftSideBarIndex__ = this.children.add(new SideBar(side.LEFT, width));
         }
 
-        protected addMain() : void{
-            this.children.add(new Main());
+        protected addHistoryStack() : void{
+            this.__historyStackIndex__ = this.children.add(new HistoryStack());
         }
 
-        protected addSidebarRight(width : number = 3) : void{
-            this.children.add(new SideBar(side.RIGHT));
+        protected addSidebarRight(width : number = 2) : void{
+            this.__rightSideBarIndex__ = this.children.add(new SideBar(side.RIGHT, width));
         }
+
+        public get leftSidebar(){
+            return this.children.elementAt(this.__leftSideBarIndex__) as SideBar;
+        }
+
+        public get rightSidebar(){
+            return this.children.elementAt(this.__rightSideBarIndex__) as SideBar;
+        }
+
+        public get historyStack(){
+            return this.children.elementAt(this.__historyStackIndex__) as HistoryStack;
+        }
+
+        public get focusShadow(){
+            return this.children.elementAt(this.__focusShadowIndex__) as FocusedShadow;
+        }
+
+        public get contentShadow(){
+            return this.children.elementAt(this.__contentShadowIndex__) as ContentShadow;
+        }
+
     }
 
     class ContentShadow extends LuiElement<Content>{
+        
         constructor(){
             super('div', 'lui-content-shadowed');
         }
+
+        
     }
 
     class FocusedShadow extends LuiElement<Content>{
@@ -548,18 +673,22 @@ namespace LUI{
 
     class SideBar extends LuiElement<Content>{
         protected __width__ : number;
+        protected __side__ : side;
 
-        constructor(side : side, width : number = 3){
+        constructor(side : side, width : number){
             super('div', `lui-sidebar-${side}`);
             this.width = width;
+            this.__side__ = side;
         }
 
         public set width(width : number){
-            if(width > 4)
-                width = 4;
-            
-            if(width < 0)
-                width = 0;
+            //let opposite = this.__side__ == side.LEFT ? this.parent.rightSidebar : this.parent.leftSidebar;
+            //let maxWidth = (12 - opposite.width);
+
+            //if(width > maxWidth)
+            //    width = maxWidth;
+
+            //if()
 
             this.__width__ = width;
             let rex = new RegExp('lui-col-[0-9]+');
@@ -575,14 +704,50 @@ namespace LUI{
         }
     }
 
-    class Main extends LuiParentElement<Content, Emphasized>{
-        constructor(){
-            super('div', 'lui-main');
-            this.domElement.classList.add('lui-col-6');
+    class HistoryStack extends LuiParentElement<Content, Emphasized>{
+        protected __width__ : number;
+
+        constructor(width : number = 8){
+            super('div', 'lui-history-stack');
+            this.width = width;
+        }
+
+        public set width(width : number){
+            if(width == this.__width__)
+                return;
+
+            let rex = new RegExp('lui-col-[0-9]+');
+            this.domElement.classList.forEach(c =>  {
+                if(rex.test(c))
+                    this.domElement.classList.remove(c);
+            });
+
+            this.domElement.classList.add(`lui-col-${width}`)
+            this.__width__ = width;
+        }
+
+        public back() : void{
+            if(this.children.size <= 1)
+                return;
+
+            let fadeOut = this.children.elementAt(this.children.size - 1);
+            let fadeIn = this.children.elementAt(this.children.size - 2);
+
+            if(this.children.size <= 2){
+                this.parent.parent.navbar.mobileBack.hide(100);
+                this.parent.focusShadow.hide(100); //originally using class inactive
+            }
+            
+            
+            fadeOut.hide(200, () => {
+                fadeIn.show(200);
+                fadeOut.remove();
+            });
+
         }
     }
 
-    class Emphasized extends LuiParentElement<Main, LuiElement<Emphasized>>{
+    class Emphasized extends LuiParentElement<HistoryStack, ILuiElement>{
 
         constructor(){
             super('div', 'lui-emphasized');
@@ -592,35 +757,6 @@ namespace LUI{
 
 }
 
-
-
-
-
-
-
-function isFunction(functionToCheck) {
-    return functionToCheck && {}.toString.call(functionToCheck) === '[object Function]';
-}
-
-//Returns true if it is a DOM node
-function isNode(o){
-return (
-    typeof Node === "object" ? o instanceof Node : 
-    o && typeof o === "object" && typeof o.nodeType === "number" && typeof o.nodeName==="string"
-);
-}
-
-//Returns true if it is a DOM element    
-function isElement(o){
-return (
-    typeof HTMLElement === "object" ? o instanceof HTMLElement : //DOM2
-    o && typeof o === "object" && o !== null && o.nodeType === 1 && typeof o.nodeName==="string"
-);
-}
-
-let isNodeOrElement = function(o){
-    return isElement(o) || isNode(0);
-}
 
 let toggleContentShadow = function(on = true, zIndex = 900){
     let contentShadow = <HTMLElement>document.querySelector('.lui-content-shadowed');
@@ -672,7 +808,6 @@ let navigateBack = function(){
         this.classList.contains('active') ?
             this.classList.remove('active') :
             this.classList.add('active');
-
     }
 
     if(this.classList.contains('active')){
@@ -682,8 +817,8 @@ let navigateBack = function(){
         this.classList.add('active');
         toggleContentShadow(true);
     }
-});
-*/
+});*/
+
 
 
 //Prevents activation/deactivation of the nav menu by clicking the navigation area
@@ -942,7 +1077,7 @@ class LuiTableFilterSuggestions extends LUI.LuiParentElement<LuiTableFilter, Lui
 
     constructor(element, filterOptions = []){
         super(
-            isNodeOrElement(element) ? element : 'ul',
+            'ul',
             'lui-table-filter-suggestions'
         );
 
@@ -1096,17 +1231,15 @@ class LuiTableFilter extends LUI.LuiParentElement<LuiTable, LUI.ILuiElement>{
 
     constructor(element, parentTable : LuiTable){
         super(
-            isNodeOrElement(element) ? element : 'div', 
+            'div', 
             'lui-filter'
         );
 
         super.parent = parentTable;
 
-        if(isNodeOrElement(element)){
-            this.constructFromDom(element);
-        }else{
-            throw new Error("A LuiTableHeader must be a DOM element");
-        }
+        
+        this.constructFromDom(element);
+        
     }
 
     constructFromDom(element){
