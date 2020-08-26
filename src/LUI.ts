@@ -539,13 +539,11 @@ namespace LUI{
 
         private __navBarIndex__ : number;
         private __contentIndex__ : number;
-        private __ajax__ : IAjaxClient;
 
         constructor(){
             super(document.body);
             this.addNavBar();
             this.addContent();
-            this.__ajax__ = new AjaxClient();
         }
 
         protected addNavBar() : void{
@@ -562,6 +560,10 @@ namespace LUI{
 
         public get content(){
             return this.children.elementAt(this.__contentIndex__) as Content;
+        }
+
+        protected loadMenus(){
+            
         }
 
     }
@@ -649,14 +651,34 @@ namespace LUI{
     }
 
     class NavBarMenu extends LuiParentElement<NavBarNavigationArea, NavBarMenuLinkArea>{
+
+        private _linkAreaIndex__ : number;
+        private __client__ : IAjaxClient;
+
         constructor(){
             super('div', 'lui-nav-bar-menu');
             this.addLinkArea();
             this.configureActivation();
+            this.__client__ = new AjaxClient();
+
+            this.__client__.get('/index/navigationmenu');
+
+        }
+
+        protected configureLinks(data) : void{
+            for( let page in data['pages']){
+                this.linkArea.addChild(
+                    new NavBarMenuLink(page['label'], page['link'] as unknown as string)
+                );
+            }
+        }
+
+        public get linkArea(){
+            return this.children.elementAt(this._linkAreaIndex__);
         }
 
         protected addLinkArea() : void{
-            this.children.add(new NavBarMenuLinkArea());
+            this._linkAreaIndex__ = this.children.add(new NavBarMenuLinkArea());
         }
 
         protected configureActivation(){
