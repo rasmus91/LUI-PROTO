@@ -1,5 +1,21 @@
 namespace LUI{
 
+    enum httpCodes{
+        OK = 200,
+        BAD_REQUEST = 400,
+        UNAUTHORIZED = 401,
+        FORBIDDEN = 403,
+        NOT_FOUND = 404,
+
+    }
+
+    enum httpMethod{
+        GET = 'GET',
+        PUT = 'PUT',
+        POST = 'POST',
+        DELETE = 'DELETE'
+    }
+
     export enum cssClasses {
         hidden = 'lui-hidden'
     };
@@ -40,6 +56,70 @@ namespace LUI{
         RIGHT = 'right', 
         LEFT = 'left'
     };
+
+    export interface IAjaxClient{
+        onSuccess : Function;
+        onError : Function;
+
+        get(url : string) : void;
+        put(url: string, data : object) : void;
+        delete(url : string) : void;
+        post(url : string, data : object) : void;
+    }
+
+    export class AjaxClient implements IAjaxClient{
+
+        private __onSuccess__: Function = undefined;
+        private __onError__: Function = undefined;
+
+        protected handleCallBack(response : Response){
+            if(response.status == httpCodes.OK)
+                this.__onSuccess__(response.json());
+            else
+                this.__onError__(response.json());
+        }
+
+        public set onSuccess(method : Function){
+            this.__onSuccess__ = method;
+        }
+
+        public set onError(method : Function){
+            this.__onError__ = method;
+        }
+
+        protected call(url : string, method : httpMethod, data : object = undefined){
+            let configuration = {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            } as RequestInit;
+
+            configuration.credentials = 'same-origin';
+
+            if(data != undefined)
+                configuration['body'] = JSON.stringify(data);
+
+            fetch(url, configuration)
+            .then(response => response.json())
+            .then(this.handleCallBack)
+            .catch(e => console.log(`${method} failed to reach the server`))
+        }
+
+        public get(url: string) {
+            this.call(url, httpMethod.GET);
+        }
+        public put(url: string, data: object) {
+            this.call(url, httpMethod.PUT, data);
+        }
+        public delete(url: string) {
+            this.call(url, httpMethod.DELETE);
+        }
+        public post(url: string, data: object) {
+            this.call(url, httpMethod.POST, data);
+        }
+        
+    }
 
     export interface IOrderedSet<T> extends Set<T>{
 
@@ -197,6 +277,8 @@ namespace LUI{
         private __element__: HTMLElement;
         private __parent__ : LUI.ILuiElement;
 
+        private __onSizeChange__ : CallableFunction;
+
         constructor(element : LUI.ILuiElement){
             super();
             this.__element__ = element.domElement;
@@ -252,6 +334,8 @@ namespace LUI{
 
             return this;
         }
+
+       
 
     }
 
@@ -455,11 +539,13 @@ namespace LUI{
 
         private __navBarIndex__ : number;
         private __contentIndex__ : number;
+        private __ajax__ : IAjaxClient;
 
         constructor(){
             super(document.body);
             this.addNavBar();
             this.addContent();
+            this.__ajax__ = new AjaxClient();
         }
 
         protected addNavBar() : void{
