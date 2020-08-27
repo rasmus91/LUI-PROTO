@@ -144,12 +144,12 @@ body{
     text-shadow: 1px 1px 6px #666666;
 }
 
-.lui-nav-bar-menu a.chosen{
+.lui-nav-bar-menu a.active{
     font-size: 1.3em;
     color: #333333;
 }
 
-.lui-nav-bar-menu a.nchosen{
+.lui-nav-bar-menu a.inactive{
     font-size: 1.1em;
     color: #666666;
 }

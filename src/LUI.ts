@@ -17,7 +17,9 @@ namespace LUI{
     }
 
     export enum cssClasses {
-        hidden = 'lui-hidden'
+        hidden = 'lui-hidden',
+        ACTIVE = 'active',
+        INACTIVE = 'inactive'
     };
 
     export enum sortingOrder {
@@ -277,7 +279,7 @@ namespace LUI{
         private __element__: HTMLElement;
         private __parent__ : LUI.ILuiElement;
 
-        private __onSizeChange__ : CallableFunction;
+        private __onSizeChange__ : (old : number, current : number) => any;
 
         constructor(element : LUI.ILuiElement){
             super();
@@ -286,6 +288,7 @@ namespace LUI{
         }
 
         add(child : T) : number{
+            let oldSize = this.size;
             let index = super.add(child);
 
             if(!this.__element__.contains(child.domElement) && index > -1)
@@ -294,10 +297,12 @@ namespace LUI{
             if(child.parent != this.__parent__)
                 child.parent = this.__parent__;
             
+            this.handleSizeChange(oldSize);
             return index;
         }
 
         remove(child : T) : number{
+            let oldSize = this.size;
             let index = super.remove(child);
 
             if(index < 0)
@@ -306,10 +311,13 @@ namespace LUI{
             child.domElement.remove();
             delete child.parent;
 
+            this.handleSizeChange(oldSize);
+
             return index;
         }
 
         insert(index : number, child : T) : boolean{
+            let oldSize = this.size;
             let result = super.insert(index, child);
             if(result)
                 this.__element__.insertBefore(
@@ -317,12 +325,16 @@ namespace LUI{
                     this.__element__.children[index + 1]
                 );
 
+            this.handleSizeChange(oldSize);
+
             return result;
         }
 
         clear() : void{
+            let oldSize = this.size;
             this.forEach(c => c.remove());
             super.clear();
+            this.handleSizeChange(oldSize);
         }
 
         sort(compareFn?: (a: T, b: T) => number): this {
@@ -333,6 +345,15 @@ namespace LUI{
             this.forEach(e => this.__element__.appendChild(e.domElement));
 
             return this;
+        }
+
+        public set onSizeChange(callback : (old : number, current : number) => any){
+            this.__onSizeChange__ = callback;
+        }
+
+        private handleSizeChange(oldSize : number){
+            if(this.__onSizeChange__ != undefined && this.size != oldSize)
+                this.__onSizeChange__(oldSize, this.size);
         }
 
        
@@ -540,14 +561,17 @@ namespace LUI{
         private __navBarIndex__ : number;
         private __contentIndex__ : number;
 
-        constructor(){
+        constructor(navLinks){
+
+            let links = JSON.parse(navLinks);
+
             super(document.body);
-            this.addNavBar();
+            this.addNavBar(links);
             this.addContent();
         }
 
-        protected addNavBar() : void{
-            this.__navBarIndex__ = this.children.add(new NavBar());
+        protected addNavBar(links) : void{
+            this.__navBarIndex__ = this.children.add(new NavBar(links));
         }
 
         protected addContent() : void{
@@ -573,13 +597,14 @@ namespace LUI{
         private __navigationIndex__ : number;
         private __mobileBackIndex__ : number;
 
-        constructor(title : string = 'Untitled'){
+        constructor(navLinks, title : string = 'Untitled'){
             super('div', 'lui-nav-bar');
             this.domElement.classList.add('lui-row');
             
             this.addMobileBackNavigation();
             this.addHeader(title);
             this.addNavigation();
+            this.configureLinks(navLinks);
         }
 
         protected addMobileBackNavigation(){
@@ -602,6 +627,20 @@ namespace LUI{
             return this.children.elementAt(this.__navigationIndex__) as NavBarNavigationArea;
         }
 
+        protected configureLinks(links){
+            let area = this.navigation.menu.linkArea;
+            (links as Array<object>).forEach(link => {
+                if(link != undefined){
+                    this.navigation.menu.linkArea.children.add(
+                        new NavBarMenuLink(
+                            link["Label"],
+                            link["URL"]
+                        )
+                    );
+                }
+            });
+        }
+
     }
 
     class NavBarLeftMobile extends LuiParentElement<NavBar, NavBarMobileBack>{
@@ -615,7 +654,7 @@ namespace LUI{
         constructor(label : string = 'Tilbage'){
             super('div', 'lui-nav-back');
             this.domElement.textContent = label;
-            
+            this.hide();
         }
     }
 
@@ -633,7 +672,7 @@ namespace LUI{
     class NavBarHeader extends LuiElement<NavBarTitleArea>{
 
         constructor(label : string){
-            super('div', 'lui-nav-header');
+            super('h3', 'lui-nav-header');
             this.domElement.textContent = label;
         }
     }
@@ -648,20 +687,20 @@ namespace LUI{
         protected addMenu(){
             this.children.add(new NavBarMenu());
         }
+
+        public get menu(){
+            return this.children.elementAt(0) as NavBarMenu;
+        }
     }
 
     class NavBarMenu extends LuiParentElement<NavBarNavigationArea, NavBarMenuLinkArea>{
 
         private _linkAreaIndex__ : number;
-        private __client__ : IAjaxClient;
 
         constructor(){
             super('div', 'lui-nav-bar-menu');
             this.addLinkArea();
             this.configureActivation();
-            this.__client__ = new AjaxClient();
-
-            this.__client__.get('/index/navigationmenu');
 
         }
 
@@ -697,13 +736,64 @@ namespace LUI{
     class NavBarMenuLinkArea extends LuiParentElement<NavBarMenu, NavBarMenuLink>{
         constructor(){
             super('div', 'lui-nav-bar-link-area')
+            this.cancelClickPropagation();
+        }
+
+        protected cancelClickPropagation(){
+            this.on('click', e => {
+                e.stopPropagation();
+            });
         }
     }
 
     class NavBarMenuLink extends LuiElement<NavBarMenuLinkArea>{
+        private __inactive__ : boolean;
+
         constructor(label : string = '', link : string){
             super('a');
             this.domElement.setAttribute('href', `#${link}`)
+            this.domElement.textContent = label;
+            this.__inactive__ = false;
+            this.configureNavigation();
+        }
+
+        public get inactive(){
+            return this.__inactive__;
+        }
+
+        public set inactive(state : boolean){
+            if(state == this.inactive)
+                return;
+
+            if(state){
+                this.active = false;
+                this.domElement.classList.add(cssClasses.INACTIVE);
+            }
+            else{
+                this.domElement.classList.remove(cssClasses.INACTIVE);
+            }
+                
+
+            this.__inactive__ = state;
+        }
+
+        public set active(state : boolean){
+            if(state)
+                this.inactive = false;
+            
+            super.active = state;
+        }
+
+        protected configureNavigation(){
+            this.on('click', e => {
+
+                this.parent.children.forEach(c => {
+                    if(c != this)
+                        c.inactive = true;
+                });
+
+                this.active = true;
+            });
         }
     }
 
@@ -818,6 +908,16 @@ namespace LUI{
         constructor(width : number = 8){
             super('div', 'lui-history-stack');
             this.width = width;
+            this.configureButtonHiding();
+        }
+
+        protected configureButtonHiding(){
+            this.children.onSizeChange = (old, current) => {
+                if(current < 2)
+                    this.parent.parent.navbar.mobileBack.hide(100);
+                else
+                    this.parent.parent.navbar.mobileBack.show(100);
+            };
         }
 
         public set width(width : number){
