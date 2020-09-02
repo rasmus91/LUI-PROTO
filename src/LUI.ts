@@ -16,6 +16,22 @@ namespace LUI{
         DELETE = 'DELETE'
     }
 
+    enum controlTypes{
+        NAV_BAR = 'NavBarInfo',
+        NAV_BAR_LINK = 'NavBarLinkInfo',
+        FORM = 'Form',
+        TABLE = 'Table',
+    }
+
+    enum entryTypes{
+        EMAIL = 'email',
+        PASSWORD = 'password',
+        INTEGER = 'number',
+        DECIMAL = 'decimal',
+        TEXT = 'text',
+        DATE = 'date'
+    }
+
     export enum cssClasses {
         hidden = 'lui-hidden',
         ACTIVE = 'active',
@@ -360,6 +376,53 @@ namespace LUI{
 
     }
 
+    export interface IControlInfo{
+        Type : string;
+    }
+
+    abstract class ControlInfo implements IControlInfo{
+        public abstract get Type() : string;
+    }
+
+    class NavBarInfo extends ControlInfo{
+        public get Type(): string {
+            return 'NavBarInfo';
+        }
+        
+        public Links : Array<NavBarLinkInfo>;
+    }
+
+    class NavBarLinkInfo extends ControlInfo{
+
+        public get Type() : string{
+            return 'NavBarLinkInfo';
+        }
+
+        public Label : string;
+        public URL : string;
+    }
+
+    class FormInfo extends ControlInfo{
+        public get Type(): string {
+            return 'FormInfo'
+        }
+
+        public Title : string;
+        public SubmitUrl : string;
+        public Entries : Array<EntryInfo>;
+    }
+
+    class EntryInfo extends ControlInfo{
+        public get Type() : string{
+            return 'EntryInfo';
+        }
+
+        public EntryType : entryTypes;
+        public Name : string;
+        public Label : string;
+        public Key : boolean;
+    }
+
     export interface ILuiElement{
         domElement : HTMLElement;
         cssName : string;
@@ -379,7 +442,7 @@ namespace LUI{
         private __cssName__ : string;
         protected __children__ : LUI.ElementChildren<LUI.ILuiElement> = undefined;
     
-        constructor(element : string | HTMLElement, cssName : string = undefined){
+        constructor(element : string | HTMLElement, cssName : string = undefined, cssSecondaries : Array<string> = undefined){
             if(element instanceof HTMLElement)
                 this.__domElement__ = element
             else if(typeof element === 'string')
@@ -389,10 +452,13 @@ namespace LUI{
             
             if(cssName != undefined)
                 this.__cssName__ = cssName;
-    
+
             if(this.__cssName__ != undefined)
                 this.__domElement__.classList.add(cssName);
     
+            if(cssSecondaries != undefined)
+                cssSecondaries.forEach(css => this.domElement.classList.add(css));
+
             this.__children__ = new LUI.ElementChildren<LUI.ILuiElement>(this);
     
             LUI.LuiElement.__domMap__.set(this.__domElement__, this);
@@ -526,7 +592,7 @@ namespace LUI{
         }
     
     
-        constructor(element : string | HTMLElement, cssName : string = undefined){
+        constructor(element : string | HTMLElement, cssName : string = undefined, cssSecondaries : Array<string> = undefined){
             super(element, cssName);
         
             this.__children__ = new LUI.ElementChildren<Tchild>(this);
@@ -561,17 +627,35 @@ namespace LUI{
         private __navBarIndex__ : number;
         private __contentIndex__ : number;
 
-        constructor(navLinks){
+        constructor(navLinks : IControlInfo){
 
-            let links = JSON.parse(navLinks);
+            //let links = JSON.parse(navLinks) as IControlInfo;
 
             super(document.body);
-            this.addNavBar(links);
+            this.addNavBar();
             this.addContent();
+
+            let links = navLinks;// as IControlInfo;
+
+            if(typeof links === 'string')
+                links = JSON.parse(links);
+
+            switch(links.Type)
+            {
+                case controlTypes.NAV_BAR:
+                    this.navbar.configureLinks((links as NavBarInfo).Links);
+                    break;
+                default:
+                    let control = new Emphasized();
+                    control.children.add(new Form(links as FormInfo));
+                    this.content.historyStack.children.add(control);
+            }
+
+
         }
 
-        protected addNavBar(links) : void{
-            this.__navBarIndex__ = this.children.add(new NavBar(links));
+        protected addNavBar() : void{
+            this.__navBarIndex__ = this.children.add(new NavBar());
         }
 
         protected addContent() : void{
@@ -586,9 +670,6 @@ namespace LUI{
             return this.children.elementAt(this.__contentIndex__) as Content;
         }
 
-        protected loadMenus(){
-            
-        }
 
     }
 
@@ -597,14 +678,13 @@ namespace LUI{
         private __navigationIndex__ : number;
         private __mobileBackIndex__ : number;
 
-        constructor(navLinks, title : string = 'Untitled'){
+        constructor(title : string = 'Untitled'){
             super('div', 'lui-nav-bar');
             this.domElement.classList.add('lui-row');
             
             this.addMobileBackNavigation();
             this.addHeader(title);
             this.addNavigation();
-            this.configureLinks(navLinks);
         }
 
         protected addMobileBackNavigation(){
@@ -627,18 +707,22 @@ namespace LUI{
             return this.children.elementAt(this.__navigationIndex__) as NavBarNavigationArea;
         }
 
-        protected configureLinks(links){
+        public configureLinks(links : Array<NavBarLinkInfo>){
             let area = this.navigation.menu.linkArea;
-            (links as Array<object>).forEach(link => {
+            links.forEach(link => {
                 if(link != undefined){
                     this.navigation.menu.linkArea.children.add(
                         new NavBarMenuLink(
-                            link["Label"],
-                            link["URL"]
+                            link.Label,
+                            link.URL
                         )
                     );
                 }
             });
+        }
+
+        public set navigation(nav){
+            
         }
 
     }
@@ -959,6 +1043,92 @@ namespace LUI{
 
         constructor(){
             super('div', 'lui-emphasized');
+        }
+
+    }
+
+    class Form extends LuiParentElement<Emphasized, ILuiElement>{
+        constructor(info : FormInfo){
+            super('form', 'lui-form', [ 'lui-centered' ]);
+            this.configureTitle(info.Title);
+        }
+
+        protected configureTitle(title : string) : void{
+            this.children.add(new FormHeader(title));
+        }
+        
+        protected configureEntries(entries : Array<EntryInfo>) : void{
+            entries.forEach(entry => this.children.add(new FormEntry(entry)));
+        }
+
+        public get data() : object {
+            let data = {};
+
+            this.children.filter(e => e instanceof FormEntry).forEach(e => {
+                let element = e as FormEntry;
+            });
+
+
+            return {};
+        }
+    }
+
+    class FormHeader extends LuiElement<Form>{
+        constructor(title : string = 'Untitled'){
+            super('h4', 'lui-header');
+            this.domElement.textContent = title;
+        }
+    }
+
+    class FormEntry extends LuiParentElement<Form, ILuiElement>{
+        
+        protected __inputIndex__ : number;
+
+        constructor(info : EntryInfo){
+            super('div', 'lui-row');
+            this.configureLabel(info.Label);
+        }
+
+        public get entry() : EntryField{
+            return this.children.elementAt(this.__inputIndex__) as EntryField;
+        }
+
+        public get name() : string{
+            return this.entry.domElement.name;
+        }
+
+        public get value() : string | Date | number {
+            if(this.entry.domElement.type == entryTypes.DATE)
+                return this.entry.domElement.valueAsDate;
+            else if(this.entry.domElement.type === entryTypes.DECIMAL ||
+                    this.entry.domElement.type === entryTypes.INTEGER)
+                return this.entry.domElement.valueAsNumber;
+            else
+                return this.entry.domElement.value;
+        }
+
+        protected configureLabel(text : string){
+            this.children.add(new EntryLabel(text));
+        }
+
+    }
+
+    class EntryLabel extends LuiElement<FormEntry>{
+        constructor(text : string){
+            super('label', 'lui-col-4');
+            this.domElement.textContent = text;
+        }
+    }
+
+    class EntryField extends LuiElement<FormEntry>{
+        constructor(type : entryTypes, name : string, initialValue : any){
+            super('input', 'lui-col-8');
+            this.domElement.type = type;
+            this.domElement.name = name;       
+        }
+
+        public get domElement() : HTMLInputElement{
+            return super.domElement as HTMLInputElement;
         }
 
     }
